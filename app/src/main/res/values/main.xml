@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <menu>
+        <string name="menu_main">Hello world!</string>
+    </menu>
+    <layout>
+        <string name="activity_main">MainActivity</string>
+    </layout>
+
+    <string name="action_settings">Settings</string>
+
+</resources>
