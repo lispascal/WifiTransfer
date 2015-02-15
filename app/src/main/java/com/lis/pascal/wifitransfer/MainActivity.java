@@ -26,16 +26,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Enumeration;
+import java.nio.charset.Charset;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -50,11 +43,16 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public class ServerAcceptor implements Runnable {
-
+        boolean stop = false;
         int port = 0;
         ServerSocket ssock;
+
         ServerAcceptor(){
 
+        }
+
+        public void stop() {
+            stop = true;
         }
 
         @Override
@@ -70,12 +68,14 @@ public class MainActivity extends ActionBarActivity {
             WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
             WifiInfo wi = wm.getConnectionInfo();
             int ip = wi.getIpAddress();
-            final String ipstr = (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff) + "." + ((ip >> 24) & 0xff) + ":" + ssock.getLocalPort();
+            final String ipstr = (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff)
+                    + "." + ((ip >> 24) & 0xff) + ":" + ssock.getLocalPort();
 
 
+            // changes the ip address shown in the app
             runOnUiThread(new Runnable() {
                 @Override
-                public void run() { // changes the ip address shown
+                public void run() {
                     TextView tv = (TextView) findViewById(R.id.ip);
                     tv.setText(ipstr);
 
@@ -83,14 +83,12 @@ public class MainActivity extends ActionBarActivity {
             });
 
             System.out.println("Set ip: " + ipstr);
-            while(true)
+            while(!stop)
             {
                 try {
                     Socket s = ssock.accept();
                     System.out.println("sendbuffersize:" + s.getSendBufferSize());
                     System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
-                    s.setReceiveBufferSize(1000000);
-                    s.setSendBufferSize(1000000);
                     SingleServer serv = new SingleServer(s);
                     new Thread(serv).start();
 
@@ -98,13 +96,19 @@ public class MainActivity extends ActionBarActivity {
                     e.printStackTrace();
                 }
             }
+            try {
+                ssock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("could not close server socket used in acceptor");
+            }
         }
     }
     final String css = "<style type=\"text/css\">" +
-            "div.dir {padding: 1px;" +
+            "div.dir {border: 1px solid black;" +
             "   background-color: orange;" +
             "   }\n" +
-            "div.file {padding:1px;" +
+            "div.file {border: 1px solid black;" +
             "   background-color: lightgray;" +
             "   }" +
             "</style>";
@@ -209,10 +213,6 @@ public class MainActivity extends ActionBarActivity {
             //c/p start
             if(uri.startsWith("/")) // ...always will
             {
-
-
-
-
                 StringBuilder dir;
 
                 // read directory up to and including last /
@@ -241,129 +241,181 @@ public class MainActivity extends ActionBarActivity {
                 {
                     sendContinue(conn, hr);
 
-                    System.out.println("body:");
-
-
-
                     try {
-                        newProcessFile(pi, is, d);
-//                        completeWrite(fs);
-//                        fs.close();
+                        uploadFile(pi, is, d);
                         is.close();
                     } catch (IOException ex) {
                         System.out.println("error writing or creating file");
                         ex.printStackTrace();
                     }
-
-//                    System.out.println();
-
+                }
+                else if(uri.contains("wf_images/"))
+                {
+                    String uriEnd = uri.substring(uri.lastIndexOf('/')+1);
+                    uriEnd = uriEnd.replaceAll("%20", " ");
+                    sendOk(conn, hr);
+                    serveAsset(uriEnd, os);
                 }
                 else if(!uri.endsWith("/") && !uri.contains("favicon.ico")) // download file at url
                 {
-                    System.out.println("in download part");
                     String uriEnd = uri.substring(uri.lastIndexOf('/')+1);
-                    uriEnd = uriEnd.replaceAll("%20", " ");
-                    File desiredFile = new File(d, uriEnd);
-
-                    System.out.println("file created: " + desiredFile.getAbsolutePath());
-                    if(desiredFile.canRead()) // serve it
-                    {
-                        sendFileDownloadHeader(conn, hr, desiredFile);
-                        BufferedInputStream fis = null;
-                        System.out.println("file exists");
-                        try {
-                            fis = new BufferedInputStream(new FileInputStream(desiredFile), 100000);
-                        } catch(IOException ex){
-                            ex.printStackTrace();
-                        }
-
-                        byte[] buf = new byte[100000];
-                        int bytesRead = 0;
-                        int bytesGiven = 0;
-                        bytesRead = fis.read(buf);
-
-                        while(bytesRead >= 0)
-                        {
-                            os.write(buf, 0, bytesRead);
-                            bytesGiven+= bytesRead;
-                            bytesRead = fis.read(buf);
-                        }
-                        fis.close();
-                        os.close();
-                    }
+                    serveFile(uriEnd, d, conn, hr, os);
                 }
                 if(uri.endsWith("/") || pi.isPost) // if not downloading, show directory
                 {
                     if(!pi.isPost) // send ok if not post, because post already sent headers.
                         sendOk(conn, hr);
-
-                    try {
-                        os.write(header.getBytes());
-                        System.out.println(d.getPath());
-                        System.out.println(d.exists());
-
-                        for(File f : d.listFiles())
-                        {
-//                            System.out.println(f.getPath());
-                            //                        System.out.println(f.getName());
-                            if(f.isDirectory()) // show each directory first
-                            {
-
-                                os.write("<div class=\"dir\"><a href=\"".getBytes());
-                                String fp = f.getPath() + "/";
-                                fp = fp.replaceAll(" ", "+");
-                                os.write(fp.getBytes());
-                                os.write("\" />".getBytes());
-                                os.write(f.getName().getBytes());
-                                os.write(" -> </a></div><br />".getBytes());
-
-                            }
-                        }
-                        for(File f : d.listFiles())
-                        {
-                            if(!f.isDirectory()) // then show each non-directory file, and its size
-                            {
-                                String fpath = f.toURI().getPath();
-//                                System.out.println(fpath);
-                                while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
-                                    fpath = fpath.replace(' ', '+');
-                                os.write("<div class=\"file\" ><a target=\"_blank\" href=\"".getBytes());
-                                os.write(fpath.getBytes());
-                                os.write("\" />".getBytes());
-                                os.write(f.getName().getBytes());
-                                os.write("</a><span style=\"float:right;\">".getBytes());
-                                os.write(String.valueOf(f.length()).getBytes());
-                                os.write(" bytes</span></div><br />".getBytes());
-                            }
-                        }
-
-                        os.write(footer.getBytes());
-                        os.close();
-                        sock.close();
-                    } catch (IOException ex) {
-                        System.out.println("couldn't write html file back to requester");
-                        ex.printStackTrace();
-                    }
+                    displayFolder(d, os);
+                    sock.close();
                 }
-
-
-
             }
             else
             {
                 try {
                     conn.sendResponseHeader(new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_NOT_FOUND, null));
                     os.close();
-                } catch (IOException ex) {
+                } catch (IOException | HttpException ex) {
                     ex.printStackTrace();
-                } catch (HttpException e) {
-                    e.printStackTrace();
                 }
             }
-            //c/p end
+
         }
 
-        private void newProcessFile(PostInfo pi, BufferedInputStream is, File dir) throws IOException {
+        /**
+         * Serves an image with name fileName to output. Used to load images and such.
+         * @param fileName Name of file to output.
+         * @param output Stream to which the file will be written.
+         */
+        private void serveAsset(String fileName, BufferedOutputStream output) {
+            fileName = fileName.replaceAll("%20", " ");
+            BufferedInputStream fis;
+            try {
+                fis = new BufferedInputStream(getAssets().open(fileName));
+                System.out.println("file exists");
+            } catch (IOException e) {
+                e.printStackTrace();
+                return; // can't open file
+            }
+
+
+            byte[] buf = new byte[100000];
+            int bytesRead = 0;
+            try {
+                bytesRead = fis.read(buf);
+                while(bytesRead >= 0)
+                {
+                    output.write(buf, 0, bytesRead);
+                    bytesRead = fis.read(buf);
+                }
+                fis.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void serveFile(String fileName, File dir, DefaultHttpServerConnection conn, HttpRequest request, BufferedOutputStream output) {
+
+            File desiredFile = new File(dir, fileName);
+
+            System.out.println("file created: " + desiredFile.getAbsolutePath());
+            if(desiredFile.canRead()) // serve it
+            {
+                sendFileDownloadHeader(conn, request, desiredFile.getName());
+                BufferedInputStream fis = null;
+                System.out.println("file exists");
+                try {
+                    fis = new BufferedInputStream(new FileInputStream(desiredFile), 100000);
+                } catch(IOException ex){
+                    ex.printStackTrace();
+                    return; // kill it early if for some reason can't read the file.
+                }
+
+                byte[] buf = new byte[100000];
+                int bytesRead = 0;
+                try {
+                    bytesRead = fis.read(buf);
+                    while(bytesRead >= 0)
+                    {
+                        output.write(buf, 0, bytesRead);
+                        bytesRead = fis.read(buf);
+                    }
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }
+
+        /**
+         * Outputs the html document part displaying the folders and files in directory d.
+         * @param d - Directory to look at all the files in.
+         * @param os - Stream to output the document part to.
+         */
+        private void displayFolder(File d, BufferedOutputStream os) {
+            try {
+                os.write(header.getBytes());
+                System.out.println(d.getPath());
+                System.out.println(d.exists());
+//                first, if not in top directory, put a link for it.
+                if(d.getPath().equals("/storage/emulated/0"))
+                {
+                    os.write("<div class=\"dir\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
+                    String fp = d.getParent();
+                    fp = fp.replaceAll(" ", "+");
+                    os.write(fp.getBytes());
+                    os.write("\" />".getBytes());
+                    os.write("Parent Folder".getBytes());
+                    os.write("</a></div>".getBytes());
+
+
+                }
+
+                for(File f : d.listFiles())
+                {
+//                            System.out.println(f.getPath());
+                    //                        System.out.println(f.getName());
+                    if(f.isDirectory()) // show each directory first
+                    {
+
+                        os.write("<div class=\"dir\"><a href=\"".getBytes());
+                        String fp = f.getPath() + "/";
+                        fp = fp.replaceAll(" ", "+");
+                        os.write(fp.getBytes());
+                        os.write("\" />".getBytes());
+                        os.write(f.getName().getBytes());
+                        os.write(" -> </a></div>".getBytes());
+
+                    }
+                }
+                for(File f : d.listFiles())
+                {
+                    if(!f.isDirectory()) // then show each non-directory file, and its size
+                    {
+                        String fpath = f.toURI().getPath();
+//                                System.out.println(fpath);
+                        while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
+                            fpath = fpath.replace(' ', '+');
+                        os.write("<div class=\"file\" ><img src=\"/wf_images/download.gif\" /><a target=\"_blank\" href=\"".getBytes());
+                        os.write(fpath.getBytes());
+                        os.write("\" />".getBytes());
+                        os.write(f.getName().getBytes());
+                        os.write("</a><span style=\"float:right;\">".getBytes());
+                        os.write(String.valueOf(f.length()).getBytes());
+                        os.write(" bytes</span></div>".getBytes());
+                    }
+                }
+
+                os.write(footer.getBytes());
+                os.close();
+            } catch (IOException ex) {
+                System.out.println("couldn't write html file back to requester");
+                ex.printStackTrace();
+            }
+        }
+
+        private void uploadFile(PostInfo pi, BufferedInputStream is, File dir) throws IOException {
             BufferedOutputStream fs = null;
             String fileName = "";
 
@@ -447,37 +499,31 @@ public class MainActivity extends ActionBarActivity {
                     }
 //                    System.out.println("bA:" + bytesAdded + "  bP:" + bytesProcessed);
                     // make new string only out of the array part written
-                    String xStr = new String(xArr, 0, validInArray); // index is to limit string to what we just made in array.
-
+//                    String xStr = new String(xArr, 0, validInArray); // index is to limit string to what we just made in array.
+                    String xStr = new String(xArr, 0, validInArray, Charset.forName("US-ASCII"));
 
 
                     if(xStr.contains(pi.boundary)) // if boundary found, write everything before last newline prior to boundary
                     {
-//                        in xStr, from 0 to boundary
-//                        in that string, find index of last newline, and write that many bytes.
-//                        ie;if newline is at index 2, write 2 bytes (0-1)
-//                        System.out.println(xStr);
+                        // want get spot of last newline. if browser is from windows, httprequest might have carriage return
+                        // not sure if other OSes will though. Kind of dangerous, but remove last char if it is carriage return
+                        // safer fix might be to check the client's OS via User-Agent header
                         int boundaryIndex = xStr.indexOf(pi.boundary);
-                        int pivotIndex = xStr.substring(0, boundaryIndex)
+                        int endIndex = xStr.substring(0, boundaryIndex)
                                        .lastIndexOf('\n'); // gets position of last newline before the boundary.
 
-                        // get the number of bytes that should be disregarded. Add one for the newline itself
-                        int disregardedBytes = xStr.length() - pivotIndex + 1;
+                        if(xStr.charAt(endIndex-1) == '\r') // if carriage return
+                            --endIndex;
 
-                        // then subtract that amount from total byte array length. This accounts for discrepancies in length
-                        // of each character in UTF-8 (android's default charset).
-                        int endIndex = validInArray - disregardedBytes;
+//                            debug stuff
+//                            System.out.println("p:" + prevInArray + "  b:" + bytesAdded);
+//                            System.out.println("v:" + validInArray);
+//                            System.out.println("length:" + pi.length);
+//                            System.out.println("eI:" + (bytesProcessed - validInArray + endIndex - preambleSize));
+//                            System.out.print("ix_");
+//                            for(int ix = endIndex; ix < xStr.length(); ix++)
+//                                System.out.print(ix - endIndex + "" + xStr.charAt(ix));
 
-                        System.out.println("p:" + prevInArray + "  b:" + bytesAdded);
-                        System.out.println("v:" + validInArray);
-                        System.out.println("length:" + pi.length);
-                        System.out.println("eI:" + (bytesProcessed - validInArray + endIndex - preambleSize));
-                        System.out.print("ix_");
-                        for(int ix = endIndex; ix < xStr.length(); ix++)
-                            System.out.print(ix - endIndex + "" + xStr.charAt(ix));
-//                        System.out.print("ix2_");
-//                        for(int ix = pi.boundary.length(); ix > 0; ix--)
-//                            System.out.print(ix + "" + (char)xArr[xArr.length - ix - 1]);
                         fs.write(xArr, 0, endIndex);
                         System.out.println("exit boundary found: length");
                         System.out.println(pi.boundary.length());
@@ -508,97 +554,10 @@ public class MainActivity extends ActionBarActivity {
             fs.close();
         }
 
-        private void processFile(PostInfo pi, BufferedInputStream is) throws IOException {
-            BufferedOutputStream fs = null;
-            String fileName = "";
-
-            int x = 0;
-
-            boolean fileCopying = false;
-            boolean endOfLine = false;
-
-            int newLines = 0;
-            StringBuilder line = new StringBuilder("");
-
-            final int LIMIT = 1000;
-            byte[] xArr = new byte[LIMIT / 10];
-            byte[] bArr = new byte[LIMIT];
-            int pos = 0;
-            System.out.println(pi.length);
-            int i = 0;
-            while(i < pi.length)
-            {
-                x = is.read();
-
-//                            System.out.print((char)x);
-                line.append((char)x);
-                bArr[pos++] = (byte)x;
-//                                System.out.print("." + (char)x);
-//                                System.out.println("=" + x);
-
-                if(x == '\n')
-                    endOfLine = true;
-                else
-                {
-//                                if(line.length() == LIMIT) // make sure we dont keep adding to stringbuilder
-                    if(pos == LIMIT) // make sure we dont keep adding to charArr
-                        endOfLine = true;
-                }
-
-                if(!fileCopying && endOfLine) // if not copying yet, look for file name.
-                {
-//                                String lStr = line.toString();
-                    String lStr = line.toString();
-
-//                                    System.out.println(lStr);
-                    if(lStr.contains("filename=\""))
-                    {
-                        // new string starts where (filename=") ends
-                        String subStr = lStr.substring(lStr.indexOf("filename=\"") + "filename=\"".length());
-                        // filename is name from 0 to
-                        fileName = subStr.substring(0, subStr.indexOf('"'));
-
-                        System.out.println("filename get:" + fileName);
-//                        fs = new BufferedOutputStream(new FileOutputStream(new File(d, fileName)));
-                    }
-                }
-                else if(endOfLine) // if copying, check if boundary is here, if not copy.
-                {
-                    String lStr = line.toString();
-                    if(lStr.contains(pi.boundary))
-                    {
-                        System.out.println("exit boundary found");
-                        break;
-                    }
-                    else
-                    {
-
-
-//                                    delayWrite(fs, bArr, 0, pos);
-                        fs.write(bArr, 0, pos);
-                   }
-                }
-
-                if(endOfLine)
-                {
-//                                line.delete(0, line.length()); // empty the line
-                    ++newLines;
-                    if (newLines == 4)
-                    {
-                        fileCopying = true;
-                        System.out.println("Starting file copy");
-                        newLines++;
-                    }
-                    pos = 0;
-                    endOfLine = false;
-                }
-            }
-        }
-
-        private void sendFileDownloadHeader(DefaultHttpServerConnection conn, HttpRequest hr, File desiredFile) {
+        private void sendFileDownloadHeader(DefaultHttpServerConnection conn, HttpRequest hr, String desiredFileName) {
             BasicHttpResponse response = new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_OK, null);
-            response.addHeader("content-disposition", "attachment; filename=" + desiredFile.getName());
-            System.out.println("content-disposition" + "attachment; filename=" + desiredFile.getName());
+            response.addHeader("content-disposition", "attachment; filename=" + desiredFileName);
+            System.out.println("content-disposition" + "attachment; filename=" + desiredFileName);
             try {
                 conn.sendResponseHeader(response);
             } catch (HttpException e) {
