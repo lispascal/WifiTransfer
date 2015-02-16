@@ -22,4 +22,7 @@ WifiTransfer is made in Android Studio 1.0.1.
 ## To-do
 * Bandwidth in tests varied from 100-600 kBps, depending on processing or connection/distance from access point.
 Use profiling and refactoring to improve those speeds and make them reliable.
+  * update: seems like it depends on network connection? another test yielded speeds of 600-1000 kBps.
 * Bypass string creation, comparison, and searching by implementing a byte array/bytewise version of each.
+* Further improve interface
+* Allow for deletion of files
