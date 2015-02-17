@@ -72,7 +72,7 @@ public class MainActivity extends ActionBarActivity {
                     Socket s = ssock.accept();
                     System.out.println("sendbuffersize:" + s.getSendBufferSize());
                     System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
-                    SingleServer serv = new SingleServer(MainActivity.this, s);
+                    SingleServer serv = new SingleServer(MainActivity.this, s, ipstr);
                     new Thread(serv).start();
 
                 } catch (IOException e) {

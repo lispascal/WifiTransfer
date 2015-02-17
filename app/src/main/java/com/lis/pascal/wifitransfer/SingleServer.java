@@ -28,10 +28,12 @@ public class SingleServer implements Runnable {
 
     private MainActivity mainActivity;
     Socket sock;
+    String url; // in case Absolute URL is needed
 
-    SingleServer(MainActivity mainActivity, Socket s) {
+    SingleServer(MainActivity mainActivity, Socket s, String ipstr) {
         this.mainActivity = mainActivity;
         sock = s;
+        url = ipstr;
     }
 
     private class PostInfo{
@@ -88,7 +90,7 @@ public class SingleServer implements Runnable {
 
             BufferedOutputStream os = new BufferedOutputStream(sock.getOutputStream(), 100000);
             PostInfo pi = new PostInfo(hr.getRequestLine().getMethod().equalsIgnoreCase("post"), boundary, length);
-            writeResponse(is, os, conn, pi, hr);
+            processRequest(is, os, conn, pi, hr);
 
 
 
@@ -111,6 +113,14 @@ public class SingleServer implements Runnable {
             "div.file {border: 1px solid black;" +
             "   background-color: lightgray;" +
             "   }" +
+            "div.file>form {display: inline;" +
+            "   }" +
+            "div.file img {margin-left: 1px;" +
+            "   border: 1px solid black;" +
+            "   }" +
+            "div.file input {margin-left: 1px;" +
+            "   border: 1px solid black;" +
+            "   }" +
             "</style>";
 
     final String headstyle = "border-radius: 12px;"
@@ -131,11 +141,11 @@ public class SingleServer implements Runnable {
     final String footer = "</div></body></html>";
 
 
-    private void writeResponse(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
+    private void processRequest(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
 
         String uri = hr.getRequestLine().getUri();
+        System.out.println("uri: " + uri);
 
-        //c/p start
         if(uri.startsWith("/")) // ...always will
         {
             StringBuilder dir;
@@ -153,7 +163,6 @@ public class SingleServer implements Runnable {
             }
 
             File exStorage = Environment.getExternalStorageDirectory();
-            System.out.println(exStorage.getPath());
             if(!dir.toString().contains(exStorage.getPath()))
                 dir.insert(0,exStorage.getPath());
 
@@ -174,7 +183,16 @@ public class SingleServer implements Runnable {
                     ex.printStackTrace();
                 }
             }
-            else if(uri.contains("wf_images/"))
+            else if(pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/delete.html?")) // if going to delete
+            {
+                String uriEnd = uri.substring(uri.lastIndexOf("/delete.html?") + "/delete.html?".length());
+                uriEnd = uriEnd.replaceAll("%20", " ");
+                File desiredFile = new File(d, uriEnd);
+                desiredFile.delete();
+                System.out.println("File " + uriEnd + " deleted");
+                sendOk(conn, hr);
+            }
+            else if(uri.contains("wf_images/")) // if a website image
             {
                 String uriEnd = uri.substring(uri.lastIndexOf('/')+1);
                 uriEnd = uriEnd.replaceAll("%20", " ");
@@ -206,6 +224,7 @@ public class SingleServer implements Runnable {
         }
 
     }
+
 
     /**
      * Serves an image with name fileName to output. Used to load images and such.
@@ -329,12 +348,24 @@ public class SingleServer implements Runnable {
                     while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
                         fpath = fpath.replace(' ', '+');
 
+                    String fname = f.getName();
+
                     os.write("<div class=\"file\" >".getBytes());
+
+                    // delete button
+                    os.write("<form method=\"post\" action=\"delete.html?".getBytes());
+                    os.write(fname.getBytes());
+                    os.write("\"><input type=\"image\" src=\"/wf_images/delete.gif\" alt=\"Delete file\" title=\"Delete file\" /></form></a>".getBytes());
+
+                    //download button and link
                     os.write("<a target=\"_blank\" href=\"".getBytes());
                     os.write(fpath.getBytes());
                     os.write("\"><img src=\"/wf_images/download.gif\" title=\"Download file (opens new tab)\" />".getBytes());
-                    os.write(f.getName().getBytes());
-                    os.write("</a><span style=\"float:right;\">".getBytes());
+                    os.write(fname.getBytes());
+                    os.write("</a>".getBytes());
+
+                    // size of file in bytes
+                    os.write("<span style=\"float:right;\">".getBytes());
                     os.write(String.valueOf(f.length()).getBytes());
                     os.write(" bytes</span></div>".getBytes());
                 }
