@@ -16,7 +16,9 @@ WifiTransfer is made in Android Studio 1.0.1.
 
 ## Features
 * Uploading and downloading single files at a time.
+* Deleting files with access control.
 * Hosts an imitation web server (handles requests manually)
+* Accessible through any browser. Only the app is needed to access the files.
 * No file size limit
 
 ## To-do

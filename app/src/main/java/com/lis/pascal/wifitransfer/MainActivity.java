@@ -1,17 +1,13 @@
 package com.lis.pascal.wifitransfer;
 
 import android.content.Context;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
-
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.Toast;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -21,74 +17,32 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ServerAcceptor acceptor = new ServerAcceptor();
+        ConnectionAcceptor acceptor = new ConnectionAcceptor(this);
         new Thread(acceptor).start();
     }
 
-    public class ServerAcceptor implements Runnable {
-        boolean stop = false;
-        int port = 0;
-        ServerSocket ssock;
+    public void onCheckboxClicked(View view) {
 
-        ServerAcceptor(){
-
-        }
-
-        public void stop() {
-            stop = true;
-        }
-
-        @Override
-        public void run() {
-            try {
-                ssock = new ServerSocket(port);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-
-            WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-            WifiInfo wi = wm.getConnectionInfo();
-            int ip = wi.getIpAddress();
-            final String ipstr = (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff)
-                    + "." + ((ip >> 24) & 0xff) + ":" + ssock.getLocalPort();
-
-
-            // changes the ip address shown in the app
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    TextView tv = (TextView) findViewById(R.id.ip);
-                    tv.setText(ipstr);
-
-                }
-            });
-
-            System.out.println("Set ip: " + ipstr);
-            while(!stop)
-            {
-                try {
-                    Socket s = ssock.accept();
-                    System.out.println("sendbuffersize:" + s.getSendBufferSize());
-                    System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
-                    SingleServer serv = new SingleServer(MainActivity.this, s, ipstr);
-                    new Thread(serv).start();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            try {
-                ssock.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("could not close server socket used in acceptor");
-            }
-        }
     }
 
+    void makeToast(final String s, final boolean displayForLongTime) {
+        final Context context = getApplicationContext();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                CheckBox canToast = (CheckBox) findViewById(R.id.checkbox_toasts);
+                if(!canToast.isChecked())
+                    return;
+                Toast toast;
+                if (displayForLongTime)
+                    toast = Toast.makeText(context, s, Toast.LENGTH_LONG);
+                else
+                    toast = Toast.makeText(context, s, Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        });
 
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

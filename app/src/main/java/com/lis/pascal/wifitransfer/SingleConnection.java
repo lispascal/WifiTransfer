@@ -1,6 +1,7 @@
 package com.lis.pascal.wifitransfer;
 
 import android.os.Environment;
+import android.widget.CheckBox;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -24,13 +25,13 @@ import java.nio.charset.Charset;
 /**
 * Created by Tath on 2/15/2015.
 */
-public class SingleServer implements Runnable {
+public class SingleConnection implements Runnable {
 
     private MainActivity mainActivity;
     Socket sock;
     String url; // in case Absolute URL is needed
 
-    SingleServer(MainActivity mainActivity, Socket s, String ipstr) {
+    SingleConnection(MainActivity mainActivity, Socket s, String ipstr) {
         this.mainActivity = mainActivity;
         sock = s;
         url = ipstr;
@@ -187,9 +188,18 @@ public class SingleServer implements Runnable {
             {
                 String uriEnd = uri.substring(uri.lastIndexOf("/delete.html?") + "/delete.html?".length());
                 uriEnd = uriEnd.replaceAll("%20", " ");
-                File desiredFile = new File(d, uriEnd);
-                desiredFile.delete();
-                System.out.println("File " + uriEnd + " deleted");
+
+                CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_deletion);
+
+                if(cb.isChecked()) {
+                    File desiredFile = new File(d, uriEnd);
+                    desiredFile.delete();
+                    System.out.println("File " + uriEnd + " deleted");
+                    mainActivity.makeToast("File deleted: " + uriEnd, true);
+                }
+                else
+                    mainActivity.makeToast("Delete attempted by " + sock.getInetAddress() + ", and failed", false);
+
                 sendOk(conn, hr);
             }
             else if(uri.contains("wf_images/")) // if a website image
@@ -224,6 +234,8 @@ public class SingleServer implements Runnable {
         }
 
     }
+
+
 
 
     /**
@@ -287,8 +299,9 @@ public class SingleServer implements Runnable {
                 fis.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                return;
             }
-
+            mainActivity.makeToast("File sent: " + fileName, false);
 
         }
     }
@@ -437,6 +450,10 @@ public class SingleServer implements Runnable {
 
                         System.out.println("filename get:" + fileName);
                         fs = new BufferedOutputStream(new FileOutputStream(new File(dir, fileName)));
+
+                        if(pi.length > 1024*1024)   // if file bigger than 1MB, display that it started uploading.
+                                                    // Otherwise, it will see the "received" message quickly anyway
+                            mainActivity.makeToast("receiving file: " + fileName, false);
                     }
                     if (++newLines == 4)
                     {
@@ -469,24 +486,15 @@ public class SingleServer implements Runnable {
 
                 if(xStr.contains(pi.boundary)) // if boundary found, write everything before last newline prior to boundary
                 {
-                    // want get spot of last newline. if browser is from windows, httprequest might have carriage return
+                    // gets spot of last newline. if browser is from windows, httprequest might have carriage return
                     // not sure if other OSes will though. Kind of dangerous, but remove last char if it is carriage return
-                    // safer fix might be to check the client's OS via User-Agent header
+                    // safer fix might be to check the client's OS via User-Agent header and condition behavior on that
                     int boundaryIndex = xStr.indexOf(pi.boundary);
                     int endIndex = xStr.substring(0, boundaryIndex)
                                    .lastIndexOf('\n'); // gets position of last newline before the boundary.
 
                     if(xStr.charAt(endIndex-1) == '\r') // if carriage return
                         --endIndex;
-
-//                            debug stuff
-//                            System.out.println("p:" + prevInArray + "  b:" + bytesAdded);
-//                            System.out.println("v:" + validInArray);
-//                            System.out.println("length:" + pi.length);
-//                            System.out.println("eI:" + (bytesProcessed - validInArray + endIndex - preambleSize));
-//                            System.out.print("ix_");
-//                            for(int ix = endIndex; ix < xStr.length(); ix++)
-//                                System.out.print(ix - endIndex + "" + xStr.charAt(ix));
 
                     fs.write(xArr, 0, endIndex);
                     System.out.println("exit boundary found: length");
@@ -515,7 +523,11 @@ public class SingleServer implements Runnable {
                 }
             }
         }
+
+        mainActivity.makeToast("File received: " + fileName, false);
+
         fs.close();
+
     }
 
     private void sendFileDownloadHeader(DefaultHttpServerConnection conn, HttpRequest hr, String desiredFileName) {
