@@ -12,18 +12,23 @@ import android.widget.Toast;
 
 public class MainActivity extends ActionBarActivity {
 
+    ConnectionAcceptor acceptor;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ConnectionAcceptor acceptor = new ConnectionAcceptor(this);
+
+        acceptor = new ConnectionAcceptor(this);
         new Thread(acceptor).start();
     }
 
     public void onCheckboxClicked(View view) {
 
     }
+
+
 
     void makeToast(final String s, final boolean displayForLongTime) {
         final Context context = getApplicationContext();
@@ -49,6 +54,10 @@ public class MainActivity extends ActionBarActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
+    }
+
+    protected void onStop() {
+        acceptor.stop();
     }
 
     @Override

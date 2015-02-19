@@ -6,5 +6,7 @@
     <string name="inetadd">0.0.0.0:50000</string>
     <string name="button_delete">Allow File Deletion</string>
     <string name="button_toast">Receive toasts</string>
+    <string name="button_access">Allow file access</string>
+    <string name="button_upload">Allow file upload</string>
 
 </resources>

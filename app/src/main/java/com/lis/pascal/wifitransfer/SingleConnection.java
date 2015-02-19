@@ -25,16 +25,25 @@ import java.nio.charset.Charset;
 /**
 * Created by Tath on 2/15/2015.
 */
-public class SingleConnection implements Runnable {
+public class SingleConnection implements Runnable, AutoCloseable {
 
     private MainActivity mainActivity;
+    private ConnectionAcceptor parent;
     Socket sock;
     String url; // in case Absolute URL is needed
 
-    SingleConnection(MainActivity mainActivity, Socket s, String ipstr) {
+    SingleConnection(MainActivity mainActivity, ConnectionAcceptor connectionAcceptor, Socket s, String ipstr) {
         this.mainActivity = mainActivity;
+        parent = connectionAcceptor;
         sock = s;
         url = ipstr;
+    }
+
+    @Override
+    public void close() throws Exception {
+        sock.shutdownInput();
+        sock.shutdownOutput();
+        sock.close();
     }
 
     private class PostInfo{
@@ -104,6 +113,10 @@ public class SingleConnection implements Runnable {
         } catch (HttpException e) {
             e.printStackTrace();
         }
+
+        // after page is served remove this conn from list.
+        parent.removeConn(this);
+
     }
 
 

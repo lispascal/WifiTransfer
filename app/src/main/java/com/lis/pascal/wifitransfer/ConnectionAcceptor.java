@@ -19,11 +19,25 @@ public class ConnectionAcceptor implements Runnable {
     boolean stop = false;
     int port = 0;
     ServerSocket ssock;
+    HashSet<SingleConnection> hsT;
+
+
 
     ConnectionAcceptor(MainActivity mainActivity){
         this.mainActivity = mainActivity;
 
     }
+
+    synchronized void removeConn(SingleConnection conn)
+    {
+        if(hsT.contains(conn))
+            hsT.remove(conn);
+    }
+    synchronized void addConn(SingleConnection conn)
+    {
+        hsT.add(conn);
+    }
+
 
     public void stop() {
         stop = true;
@@ -52,7 +66,6 @@ public class ConnectionAcceptor implements Runnable {
             public void run() {
                 TextView tv = (TextView) mainActivity.findViewById(R.id.ip);
                 tv.setText(ipstr);
-
             }
         });
 
@@ -60,13 +73,16 @@ public class ConnectionAcceptor implements Runnable {
 
         HashSet<InetAddress> hs = new HashSet<>();
 
+        hsT = new HashSet<>();
+
         while(!stop)
         {
             try {
                 Socket s = ssock.accept();
                 System.out.println("sendbuffersize:" + s.getSendBufferSize());
                 System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
-                SingleConnection serv = new SingleConnection(mainActivity, s, ipstr);
+                SingleConnection serv = new SingleConnection(mainActivity, this, s, ipstr);
+                addConn(serv);
                 new Thread(serv).start();
 
                 if(!hs.contains(s.getInetAddress()))
@@ -80,9 +96,15 @@ public class ConnectionAcceptor implements Runnable {
         }
         try {
             ssock.close();
+            for(SingleConnection i : hsT)
+            {
+                i.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("could not close server socket used in acceptor");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
