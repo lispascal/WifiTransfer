@@ -21,6 +21,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * Created by Tath on 2/15/2015.
@@ -120,6 +123,41 @@ public class SingleConnection implements Runnable, AutoCloseable {
     }
 
 
+    final String js = "<script>" + "\n" +
+            "function rename(element) {" + "\n" +
+            "   oldName = element.parentElement.getAttribute(\"name\");" + "\n" +
+//            "   oldName = oldName.substr(0, oldName.length);" + "\n" + // for some reason a space is at the end
+            "   var result = prompt(\"New File Name?\", oldName);" + "\n" +
+
+            // if they didn't hit cancel & name is different, create form then submit it
+            "   if(result != null && result != oldName)" +  "\n" +
+            "   {" + "\n" +
+            "       var form = document.createElement(\"form\");" + "\n" +
+            "       form.setAttribute(\"method\", \"POST\");" + "\n" +
+            // path
+            "       form.setAttribute(\"action\", \"rename.html?\");" + "\n" +
+            "       form.setAttribute(\"accept-charset\", \"UTF-8\");" + "\n" +
+            "       form.setAttribute(\"enctype\", \"multipart/form-data\");" + "\n" +
+
+    // first argument in post
+            "       var inp1 = document.createElement(\"input\");" + "\n" +
+            "       inp1.setAttribute(\"type\", \"hidden\");" + "\n" +
+            "       inp1.setAttribute(\"name\", \"oldName\");" + "\n" +
+            "       inp1.setAttribute(\"value\", oldName);" + "\n" +
+            "       form.appendChild(inp1);" + "\n" +
+            // second argument in post
+            "       var inp2 = document.createElement(\"input\");" + "\n" +
+            "       inp2.setAttribute(\"type\", \"hidden\");" + "\n" +
+            "       inp2.setAttribute(\"name\", \"newName\");" + "\n" +
+            "       inp2.setAttribute(\"value\", result);" + "\n" +
+            "       form.appendChild(inp2);" + "\n" +
+            // submit form
+            "       document.body.appendChild(form);" + "\n" +
+            "       form.submit();" +
+            "    }" + "\n" +
+            "}" + "\n" +
+            "</script>";
+
     final String css = "<style type=\"text/css\">" +
             "div.dir {border: 1px solid black;" +
             "   background-color: orange;" +
@@ -130,6 +168,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "div.file>form {display: inline;" +
             "   }" +
             "div.file img {margin-left: 1px;" +
+            "   cursor: pointer; " +
             "   border: 1px solid black;" +
             "   }" +
             "div.file input {margin-left: 1px;" +
@@ -215,6 +254,63 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
                 sendOk(conn, hr);
             }
+            else if(pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/rename.html?")) // if going to rename
+            {
+                if(pi.length < 3000) // if not this, then it is absurdly long, and forget about it
+                {
+                    byte[] byteArr = new byte[pi.length];
+
+                    int count = 0;
+                    while (count < pi.length) {
+                        count += is.read(byteArr);
+                    }
+
+
+                    String argStr = new String(byteArr, Charset.forName("UTF-8"));
+                    System.out.println("argstr:\n" + argStr);
+                    System.out.println("boundary:\n" + pi.boundary);
+
+                    HashMap<String, String> hm = parseFormData(argStr, pi.boundary);
+                    System.out.println("hashmap:");
+                    for(Map.Entry<String, String> ent : hm.entrySet())
+                    {
+                        System.out.println(ent.getKey() + " : " + ent.getValue());
+                    }
+
+                    String oldName = hm.get("oldName");
+                    String newName = hm.get("newName");
+
+                    // get two arguments out of uriEnd
+
+                    CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_deletion);
+
+                    if (cb.isChecked()) {
+                        if(oldName != null && newName != null && !newName.equalsIgnoreCase(""))
+                        {
+                            File from = new File(d, oldName);
+                            File to = new File(d, newName);
+                            System.out.println("oldFile exists?:" + from.exists());
+                            System.out.println("newFile exists?:" + to.exists());
+
+                            boolean success = from.renameTo(to);
+                            if(success)
+                            {
+                                System.out.println("File " + oldName + " renamed to " + newName);
+                                mainActivity.makeToast("File " + oldName + " renamed to " + newName, true);
+                            }
+                            else
+                            {
+                                System.out.println("rename failed");
+                                System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
+
+                            }
+                        }
+                    } else
+                        mainActivity.makeToast("Rename attempted by " + sock.getInetAddress() + ", and failed", false);
+
+                    sendOk(conn, hr);
+                }
+            }
             else if(uri.contains("wf_images/")) // if a website image
             {
                 String uriEnd = uri.substring(uri.lastIndexOf('/')+1);
@@ -248,7 +344,46 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
     }
 
+    private HashMap<String, String> parseFormData(String argStr, String boundary) {
+        HashMap<String, String> result = new HashMap<>();
+        while(argStr.contains(boundary) && argStr.contains("name=\""))
+        {
+            int nameStart = argStr.indexOf("name=\"");
+            if(nameStart == -1)
+                break;
+            nameStart += "name=\"".length();
+            int nameEnd = argStr.substring(nameStart).indexOf('"'); // relative to namestart
+            if(nameEnd == -1)
+                break;
+            nameEnd += nameStart;
+            String name = argStr.substring(nameStart, nameEnd);
 
+
+            int lineStart = argStr.substring(nameEnd).indexOf('\n'); // relative to nameEnd
+            if(lineStart == -1)
+                break;
+
+            lineStart += nameEnd + 1; // +1 skips over the newline itself
+            lineStart += argStr.substring(lineStart).indexOf('\n') + 1; // skip over a second newline. since request puts two
+
+            int lineEnd = argStr.substring(lineStart).indexOf('\n'); // relative to linestart
+            if(lineEnd == -1)
+                break;
+            lineEnd += lineStart;
+            String line = argStr.substring(lineStart, lineEnd);
+            if(line.endsWith("\r"))
+                line = line.substring(0, line.length()-1); // strip a carriage return
+
+
+            result.put(name, line);
+            System.out.println("added:" + name + "=" + line);
+            System.out.println("line ended with " + (int)line.charAt(line.length()-1));
+            argStr = argStr.substring(lineEnd);
+        }
+
+
+        return result;
+    }
 
 
     /**
@@ -330,6 +465,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             String title = "<title>" + d.getPath() + "</title>";
             os.write(title.getBytes());
             os.write(css.getBytes());
+            os.write(js.getBytes());
             os.write(header_2.getBytes());
             System.out.println(d.getPath());
             System.out.println(d.exists());
@@ -372,11 +508,18 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     String fpath = f.toURI().getPath();
 //                                System.out.println(fpath);
                     while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
-                        fpath = fpath.replace(' ', '+');
+                        fpath = fpath.replaceFirst(" ", "+");
 
                     String fname = f.getName();
 
-                    os.write("<div class=\"file\" >".getBytes());
+                    os.write(("<div class=\"file\" name=\"" + fname + "\">").getBytes());
+
+
+                    // rename button
+                    os.write("<img src=\"/wf_images/rename.gif\" alt=\"Rename file\" title=\"Rename file\" name=\"".getBytes());
+                    os.write(fname.getBytes());
+                    os.write("\" onclick=\"rename(this)\"/>".getBytes());
+
 
                     // delete button
                     os.write("<form method=\"post\" action=\"delete.html?".getBytes());

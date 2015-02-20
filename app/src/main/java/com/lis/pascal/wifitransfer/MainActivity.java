@@ -57,7 +57,9 @@ public class MainActivity extends ActionBarActivity {
     }
 
     protected void onStop() {
+        super.onStop();
         acceptor.stop();
+        System.out.println("thread stopped");
     }
 
     @Override
