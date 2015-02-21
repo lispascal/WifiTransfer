@@ -21,7 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -199,7 +198,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         String uri = hr.getRequestLine().getUri();
         System.out.println("uri: " + uri);
 
-        if(uri.startsWith("/")) // ...always will
+        if (uri.startsWith("/")) // ...always will
         {
             StringBuilder dir;
 
@@ -209,138 +208,133 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
             System.out.println("dir preproc = " + dir.toString());
 
-            if(!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()))
-            {
+            if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
                 System.out.println("Can't open external storage");
                 return;
             }
 
             File exStorage = Environment.getExternalStorageDirectory();
-            if(!dir.toString().contains(exStorage.getPath()))
-                dir.insert(0,exStorage.getPath());
+            if (!dir.toString().contains(exStorage.getPath()))
+                dir.insert(0, exStorage.getPath());
 
             File d;
             d = new File(dir.toString().replace("+", " ")); // strip spaces from url and change to +
             System.out.println("directory = " + d.getAbsolutePath());
 
             //handle uploading of files
-            if(pi.isPost && uri.endsWith("upload.html?"))
+            if (pi.isPost && uri.endsWith("upload.html?"))
             {
-                sendContinue(conn, hr);
+                sendContinue(conn, hr); // change fileUpload() later to break connection as http should if no perms
 
                 try {
-                    uploadFile(pi, is, d);
+                    fileUpload(pi, is, d);
                     is.close();
                 } catch (IOException ex) {
                     System.out.println("error writing or creating file");
                     ex.printStackTrace();
                 }
-            }
-            else if(pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/delete.html?")) // if going to delete
+            } else if (pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/delete.html?")) // if going to delete
             {
                 String uriEnd = uri.substring(uri.lastIndexOf("/delete.html?") + "/delete.html?".length());
                 uriEnd = uriEnd.replaceAll("%20", " ");
 
-                CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_deletion);
-
-                if(cb.isChecked()) {
-                    File desiredFile = new File(d, uriEnd);
-                    desiredFile.delete();
-                    System.out.println("File " + uriEnd + " deleted");
-                    mainActivity.makeToast("File deleted: " + uriEnd, true);
-                }
-                else
-                    mainActivity.makeToast("Delete attempted by " + sock.getInetAddress() + ", and failed", false);
-
+                deleteFile(d, uriEnd);
                 sendOk(conn, hr);
-            }
-            else if(pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/rename.html?")) // if going to rename
+            } else if (pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/rename.html?")) // if going to rename
             {
-                if(pi.length < 3000) // if not this, then it is absurdly long, and forget about it
-                {
-                    byte[] byteArr = new byte[pi.length];
-
-                    int count = 0;
-                    while (count < pi.length) {
-                        count += is.read(byteArr);
-                    }
-
-
-                    String argStr = new String(byteArr, Charset.forName("UTF-8"));
-                    System.out.println("argstr:\n" + argStr);
-                    System.out.println("boundary:\n" + pi.boundary);
-
-                    HashMap<String, String> hm = parseFormData(argStr, pi.boundary);
-                    System.out.println("hashmap:");
-                    for(Map.Entry<String, String> ent : hm.entrySet())
-                    {
-                        System.out.println(ent.getKey() + " : " + ent.getValue());
-                    }
-
-                    String oldName = hm.get("oldName");
-                    String newName = hm.get("newName");
-
-                    // get two arguments out of uriEnd
-
-                    CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_deletion);
-
-                    if (cb.isChecked()) {
-                        if(oldName != null && newName != null && !newName.equalsIgnoreCase(""))
-                        {
-                            File from = new File(d, oldName);
-                            File to = new File(d, newName);
-                            System.out.println("oldFile exists?:" + from.exists());
-                            System.out.println("newFile exists?:" + to.exists());
-
-                            boolean success = from.renameTo(to);
-                            if(success)
-                            {
-                                System.out.println("File " + oldName + " renamed to " + newName);
-                                mainActivity.makeToast("File " + oldName + " renamed to " + newName, true);
-                            }
-                            else
-                            {
-                                System.out.println("rename failed");
-                                System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
-
-                            }
-                        }
-                    } else
-                        mainActivity.makeToast("Rename attempted by " + sock.getInetAddress() + ", and failed", false);
-
-                    sendOk(conn, hr);
-                }
-            }
-            else if(uri.contains("wf_images/")) // if a website image
+                fileRename(d, is, pi);
+                sendOk(conn, hr);
+            } else if (uri.contains("wf_images/") || uri.endsWith("favicon.ico")) // if a website image
             {
-                String uriEnd = uri.substring(uri.lastIndexOf('/')+1);
+                String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
                 uriEnd = uriEnd.replaceAll("%20", " ");
                 sendOk(conn, hr);
                 serveAsset(uriEnd, os);
-            }
-            else if(!uri.endsWith("/") && !uri.contains("favicon.ico")) // download file at url
+            } else if (!uri.endsWith("/") && !uri.contains("favicon.ico")) // download file at url
             {
-                String uriEnd = uri.substring(uri.lastIndexOf('/')+1);
+                String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
                 uriEnd = uriEnd.replaceAll("%20", " ");
                 serveFile(uriEnd, d, conn, hr, os);
             }
-            if(uri.endsWith("/") || pi.isPost) // if not downloading, show directory
+            if (uri.endsWith("/") || pi.isPost) // if not downloading, show directory
             {
-                if(!pi.isPost) // send ok if not post, because post already sent headers.
+                if (!pi.isPost) // send ok if not post, because post already sent headers.
                     sendOk(conn, hr);
                 displayFolder(d, os);
                 sock.close();
             }
         }
-        else
+    }
+
+    private boolean fileRename(File d, BufferedInputStream is, PostInfo pi) throws IOException {
+        if(pi.length < 3000) // if not this, then it is absurdly long, and forget about it
         {
-            try {
-                conn.sendResponseHeader(new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_NOT_FOUND, null));
-                os.close();
-            } catch (IOException | HttpException ex) {
-                ex.printStackTrace();
+            byte[] byteArr = new byte[pi.length];
+
+            int count = 0;
+            while (count < pi.length) {
+                count += is.read(byteArr);
             }
+
+
+            String argStr = new String(byteArr, Charset.forName("UTF-8"));
+            System.out.println("argstr:\n" + argStr);
+            System.out.println("boundary:\n" + pi.boundary);
+
+            HashMap<String, String> hm = parseFormData(argStr, pi.boundary);
+            System.out.println("hashmap:");
+            for(Map.Entry<String, String> ent : hm.entrySet())
+            {
+                System.out.println(ent.getKey() + " : " + ent.getValue());
+            }
+
+            String oldName = hm.get("oldName");
+            String newName = hm.get("newName");
+
+            // get two arguments out of uriEnd
+
+            CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_rename);
+
+            if (cb.isChecked()) {
+                if(oldName != null && newName != null && !newName.equalsIgnoreCase(""))
+                {
+                    File from = new File(d, oldName);
+                    File to = new File(d, newName);
+                    System.out.println("oldFile exists?:" + from.exists());
+                    System.out.println("newFile exists?:" + to.exists());
+
+                    boolean success = from.renameTo(to);
+                    if(success)
+                    {
+                        System.out.println("File " + oldName + " renamed to " + newName);
+                        mainActivity.makeToast("File " + oldName + " renamed to " + newName, true);
+                    }
+                    else
+                    {
+                        System.out.println("rename failed");
+                        System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
+
+                    }
+                }
+
+            } else
+                mainActivity.makeToast("Rename attempted by " + sock.getInetAddress() + ", and failed", false);
+
         }
+        return false;
+    }
+
+    private void deleteFile(File d, String uriEnd) {
+        CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_deletion);
+
+        if(cb.isChecked()) {
+            File desiredFile = new File(d, uriEnd);
+            desiredFile.delete();
+            System.out.println("File " + uriEnd + " deleted");
+            mainActivity.makeToast("File deleted: " + uriEnd, true);
+        }
+        else
+            mainActivity.makeToast("Delete attempted by " + sock.getInetAddress() + ", and failed", false);
 
     }
 
@@ -423,6 +417,14 @@ public class SingleConnection implements Runnable, AutoCloseable {
         File desiredFile = new File(dir, fileName);
 
         System.out.println("file created: " + desiredFile.getAbsolutePath());
+
+
+        CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_download);
+        if (!cb.isChecked()) {
+            mainActivity.makeToast("Download attempted by " + sock.getInetAddress() + ", and failed", false);
+            sendOk(conn, request);
+            return;
+        }
         if(desiredFile.canRead()) // serve it
         {
             sendFileDownloadHeader(conn, request, desiredFile.getName());
@@ -548,9 +550,16 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
     }
 
-    private void uploadFile(PostInfo pi, BufferedInputStream is, File dir) throws IOException {
+    private void fileUpload(PostInfo pi, BufferedInputStream is, File dir) throws IOException {
         BufferedOutputStream fs = null;
         String fileName = "";
+
+        CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_upload);
+        if (!cb.isChecked()) {
+            mainActivity.makeToast("File uploaded attempted and failed", false);
+            return;
+        }
+
 
         int x = 0;
 
