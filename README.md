@@ -10,21 +10,14 @@ WifiTransfer is made in Android Studio 1.0.1.
 4. Press "Clone".
 
 ## Use
-1. Run the application with a WiFi connection.
-2. Open the provided IP on another device or computer on the same network.
-3. The webpage served will allow you to navigate directories, upload files to, and download files from those directories .
+1. Run the application on device with a WiFi connection.
+2. Open the provided url (ip:port) on another device or computer on the same network.
+3. The web page served will allow you to navigate directories and interact with files from those directories.
 
 ## Features
 * Uploading and downloading single files at a time.
-* Deleting files with access control.
+* Deleting and renaming files.
+* Access Control
 * Hosts an imitation web server (handles requests manually)
 * Accessible through any browser. Only the app is needed to access the files.
 * No file size limit
-
-## To-do
-* Bandwidth in tests varied from 100-600 kBps, depending on processing or connection/distance from access point.
-Use profiling and refactoring to improve those speeds and make them reliable.
-  * update: seems like it depends on network connection? another test yielded speeds of 600-1000 kBps.
-* Bypass string creation, comparison, and searching by implementing a byte array/bytewise version of each.
-* Further improve interface
-* Allow for deletion of files
