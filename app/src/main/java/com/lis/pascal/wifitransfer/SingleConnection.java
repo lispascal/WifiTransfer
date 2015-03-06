@@ -1,6 +1,7 @@
 package com.lis.pascal.wifitransfer;
 
 import android.os.Environment;
+import android.text.format.Time;
 import android.widget.CheckBox;
 
 import org.apache.http.Header;
@@ -482,9 +483,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
                 os.write("/\" />".getBytes());
                 os.write("Parent Folder".getBytes());
                 os.write("</a></div>".getBytes());
-
-
             }
+
 
             for(File f : d.listFiles())
             {
@@ -513,7 +513,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
                         fpath = fpath.replaceFirst(" ", "+");
 
                     String fname = f.getName();
-
                     os.write(("<div class=\"file\" name=\"" + fname + "\">").getBytes());
 
 
@@ -534,6 +533,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     os.write("\"><img src=\"/wf_images/download.gif\" title=\"Download file (opens new tab)\" />".getBytes());
                     os.write(fname.getBytes());
                     os.write("</a>".getBytes());
+
 
                     // size of file in bytes
                     os.write("<span style=\"float:right;\">".getBytes());
