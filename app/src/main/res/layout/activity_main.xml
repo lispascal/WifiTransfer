@@ -7,14 +7,22 @@
     android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
 
     <TextView android:text="@string/inetadd" android:layout_width="wrap_content"
+        android:layout_centerHorizontal="true"
         android:id="@+id/ip"
         android:layout_height="wrap_content"
         android:textSize="35dp"
         android:textIsSelectable="false" />
 
-    <CheckBox android:id="@+id/checkbox_download"
+    <TextView android:id="@+id/Allow"
         android:checked="true"
         android:layout_below="@+id/ip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/allow"
+        android:textSize="35dp" />
+    <CheckBox android:id="@+id/checkbox_download"
+        android:checked="true"
+        android:layout_below="@+id/Allow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_download"

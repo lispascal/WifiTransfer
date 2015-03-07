@@ -1,7 +1,7 @@
 package com.lis.pascal.wifitransfer;
 
+import android.net.Uri;
 import android.os.Environment;
-import android.text.format.Time;
 import android.widget.CheckBox;
 
 import org.apache.http.Header;
@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -124,7 +125,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
 
     final String js = "<script>" + "\n" +
-            "function rename(element) {" + "\n" +
+            "function rename(element, dir) {" + "\n" +
             "   oldName = element.parentElement.getAttribute(\"name\");" + "\n" +
 //            "   oldName = oldName.substr(0, oldName.length);" + "\n" + // for some reason a space is at the end
             "   var result = prompt(\"New File Name?\", oldName);" + "\n" +
@@ -135,7 +136,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "       var form = document.createElement(\"form\");" + "\n" +
             "       form.setAttribute(\"method\", \"POST\");" + "\n" +
             // path
-            "       form.setAttribute(\"action\", \"rename.html?\");" + "\n" +
+            "       form.setAttribute(\"action\", \"rename.html?path=\" + dir);" + "\n" +
             "       form.setAttribute(\"accept-charset\", \"UTF-8\");" + "\n" +
             "       form.setAttribute(\"enctype\", \"multipart/form-data\");" + "\n" +
 
@@ -159,113 +160,171 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "</script>";
 
     final String css = "<style type=\"text/css\">" +
+            "h1 {border-radius: 12px;" +
+            "background-clip: padding-box;" +
+            "width: 95%;" +
+            "padding: 10px;" +
+            "background-color: gray;" +
+            "   }\n" +
             "div.dir {border: 1px solid black;" +
             "   background-color: orange;" +
             "   }\n" +
-            "div.file {border: 1px solid black;" +
+            "div.dir img {margin-left: 1px;" +
+            "   height:1em;width:1em;" +
+            "   cursor: pointer; " +
+            "   border: 1px solid black;" +
+            "   }" +
+            "#contentContainer {width:95%;" +
+            "   background-clip: padding-box;" +
+            "   }\n" +
+            "#navigationContainer {width:15%;" +
+            "   border-radius: 12px;" +
+            "   padding: 4px;" +
             "   background-color: lightgray;" +
+            "   vertical-align: top;" +
+            "   }\n" +
+            "#directoryContainer {width:85%;" +
+            "   padding: 4px;" +
+            "   }\n" +
+            "div.file {border: 1px solid black;" +
             "   }" +
             "div.file>form {display: inline;" +
             "   }" +
             "div.file img {margin-left: 1px;" +
+            "   height:1em;width:1em;" +
             "   cursor: pointer; " +
             "   border: 1px solid black;" +
             "   }" +
             "div.file input {margin-left: 1px;" +
+            "   height:1em;width:1em;" +
             "   border: 1px solid black;" +
             "   }" +
             "</style>";
 
-    final String headstyle = "border-radius: 12px;"
-            + "background-clip: padding-box;"
-            + "width: 90%;"
-            + "padding: 10px;"
-            + "background-color: gray";
-    final String header_1 = "<html><head>";
-    final String header_2 = "</head><body>"
-            + "<h1 style=\"" + headstyle + "\">FileServer"
-            + "<form method=\"post\" action=\"upload.html?\" enctype=\"multipart/form-data\">"
+    final String header_start = "<html><head>";
+    final String header_end = "</head><body>";
+    final String upload_form_start = "<h1>FileServer"
+            + "<form method=\"post\" action=\"";
+
+    final String upload_form_end = "\" enctype=\"multipart/form-data\">"
             + "<input type=\"file\" name=\"upfile\" />"
             + "<input type=\"submit\" value=\"Send\" />"
             + "</form>"
-            + "</h1>"
-            + "<div id=\"fileListContainer\" style=\"width:90%\">";
+            + "</h1>";
+    final String container_start = "<table id=\"contentContainer\"><tr>";
+    final String navigation_start = "<td id=\"navigationContainer\">";
+    final String navigation_end = "</td>";
 
-    final String footer = "</div></body></html>";
+    final String directory_start= "<td id=\"directoryContainer\">";
+    final String directory_end = "</td>";
+    final String container_end = "</tr></div></body></html>";
 
 
     private void processRequest(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
 
-        String uri = hr.getRequestLine().getUri();
-        System.out.println("uri: " + uri);
+        String uriStr = hr.getRequestLine().getUri();
 
-        if (uri.startsWith("/")) // ...always will
+        Uri uriObj = Uri.parse(uriStr);
+        System.out.println("uri: " + uriObj.getPath());
+        String uri = uriObj.getPath();
+
+        StringBuilder dir = new StringBuilder();
+        if(uriObj.getQueryParameter("path") != null)
+            dir.append(uriObj.getQueryParameter("path"));
+
+        System.out.println("dir preproc = " + dir);
+
+        if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            System.out.println("Can't open external storage");
+            return;
+        }
+
+        File exStorage = Environment.getExternalStorageDirectory();
+        if (!dir.toString().contains(exStorage.getPath()))
+            dir.insert(0, exStorage.getPath());
+
+
+
+        File dirFile;
+        dirFile = new File(dir.toString()); // convert spaces appropriately
+        if(!dirFile.exists() || !dirFile.isDirectory()) // catch issues in the directory path
+            dirFile = new File("/storage/emulated/0");
+        System.out.println("directory = " + dirFile.getAbsolutePath());
+
+        //handle uploading of files
+        if (pi.isPost && uri.equalsIgnoreCase("/upload.html"))
         {
-            StringBuilder dir;
-
-            // read directory up to and including last /
-            dir = new StringBuilder(uri.substring(0, uri.lastIndexOf('/') + 1));
-
-
-            System.out.println("dir preproc = " + dir.toString());
-
-            if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-                System.out.println("Can't open external storage");
-                return;
+            sendContinue(conn, hr); // change fileUpload() later to break connection as http should if no perms
+            fileUpload(pi, is, dirFile);
+            try {
+                is.close();
+            } catch (IOException ex) {
+                System.out.println("error writing or creating file");
+                ex.printStackTrace();
             }
-
-            File exStorage = Environment.getExternalStorageDirectory();
-            if (!dir.toString().contains(exStorage.getPath()))
-                dir.insert(0, exStorage.getPath());
-
-            File d;
-            d = new File(dir.toString().replace("+", " ")); // strip spaces from url and change to +
-            System.out.println("directory = " + d.getAbsolutePath());
-
-            //handle uploading of files
-            if (pi.isPost && uri.endsWith("upload.html?"))
-            {
-                sendContinue(conn, hr); // change fileUpload() later to break connection as http should if no perms
-
-                try {
-                    fileUpload(pi, is, d);
-                    is.close();
-                } catch (IOException ex) {
-                    System.out.println("error writing or creating file");
-                    ex.printStackTrace();
-                }
-            } else if (pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/delete.html?")) // if going to delete
-            {
-                String uriEnd = uri.substring(uri.lastIndexOf("/delete.html?") + "/delete.html?".length());
-                uriEnd = uriEnd.replaceAll("%20", " ");
-
-                deleteFile(d, uriEnd);
-                sendOk(conn, hr);
-            } else if (pi.isPost && uri.substring(uri.lastIndexOf('/')).startsWith("/rename.html?")) // if going to rename
-            {
-                fileRename(d, is, pi);
-                sendOk(conn, hr);
-            } else if (uri.contains("wf_images/") || uri.endsWith("favicon.ico")) // if a website image
-            {
-                String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
-                uriEnd = uriEnd.replaceAll("%20", " ");
-                sendOk(conn, hr);
-                serveAsset(uriEnd, os);
-            } else if (!uri.endsWith("/") && !uri.contains("favicon.ico")) // download file at url
-            {
-                String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
-                uriEnd = uriEnd.replaceAll("%20", " ");
-                serveFile(uriEnd, d, conn, hr, os);
-            }
-            if (uri.endsWith("/") || pi.isPost) // if not downloading, show directory
-            {
-                if (!pi.isPost) // send ok if not post, because post already sent headers.
-                    sendOk(conn, hr);
-                displayFolder(d, os);
-                sock.close();
+        } else if (uri.equalsIgnoreCase("/delete.html")) // if going to delete
+        {
+            String fileName = uriObj.getQueryParameter("file");
+            if(fileName != null)
+                deleteFile(dirFile, fileName);
+            sendOk(conn, hr);
+        } else if (pi.isPost && uri.equalsIgnoreCase("/rename.html")) // if going to rename
+        {
+            fileRename(dirFile, is, pi);
+            sendOk(conn, hr);
+        } else if (uri.contains("wf_images/") || uri.endsWith("favicon.ico")) // if a website image
+        {
+            String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
+            uriEnd = uriEnd.replace("%20", " ");
+            sendOk(conn, hr);
+            serveAsset(uriEnd, os);
+        } else if (uri.equalsIgnoreCase("/download.html")) // download file at url
+        {
+            String fileName = uriObj.getQueryParameter("file");
+            if(fileName != null) {
+                serveFile(fileName, dirFile, conn, hr, os);
             }
         }
+
+//        if (uri.endsWith("/") || pi.isPost) // if not downloading, show directory.
+        if (uri.equalsIgnoreCase("/index.html") || uri.equalsIgnoreCase("/upload.html") ||
+                uri.equalsIgnoreCase("/delete.html") || uri.equalsIgnoreCase("/rename.html") ||
+                uri.equalsIgnoreCase("/") || pi.isPost) // if not downloading, show directory.
+        {
+            if (!pi.isPost) // send ok if not post, because post already sent headers.
+                sendOk(conn, hr);
+            servePage(dirFile, os);
+            os.close();
+            sock.close();
+        }
     }
+
+    private void servePage(File d, BufferedOutputStream os) {
+        try {
+            os.write(header_start.getBytes());
+            String title = "<title>" + d.getPath() + "</title>";
+            os.write(title.getBytes());
+            os.write(css.getBytes());
+            os.write(js.getBytes());
+            os.write(header_end.getBytes());
+            os.write(upload_form_start.getBytes());
+            os.write(getUploadUrl(d).getBytes());
+            os.write(upload_form_end.getBytes());
+            os.write(container_start.getBytes());
+            os.write(navigation_start.getBytes());
+            displayNavigationTree(d, os);
+            os.write(navigation_end.getBytes());
+            os.write(directory_start.getBytes());
+            displayFolder(d, os);
+            os.write(directory_end.getBytes());
+            os.write(container_end.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
 
     private boolean fileRename(File d, BufferedInputStream is, PostInfo pi) throws IOException {
         if(pi.length < 3000) // if not this, then it is absurdly long, and forget about it
@@ -325,17 +384,17 @@ public class SingleConnection implements Runnable, AutoCloseable {
         return false;
     }
 
-    private void deleteFile(File d, String uriEnd) {
+    private void deleteFile(File d, String fileName) {
         CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_deletion);
-
         if(cb.isChecked()) {
-            File desiredFile = new File(d, uriEnd);
-            desiredFile.delete();
-            System.out.println("File " + uriEnd + " deleted");
-            mainActivity.makeToast("File deleted: " + uriEnd, true);
+            File desiredFile = new File(d, fileName);
+            if(desiredFile.delete()) {
+                System.out.println("File " + fileName + " deleted");
+                mainActivity.makeToast("File deleted: " + fileName, true);
+                return;
+            }
         }
-        else
-            mainActivity.makeToast("Delete attempted by " + sock.getInetAddress() + ", and failed", false);
+        mainActivity.makeToast("Delete attempted by " + sock.getInetAddress() + ", and failed", false);
 
     }
 
@@ -387,7 +446,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
      * @param output Stream to which the file will be written.
      */
     private void serveAsset(String fileName, BufferedOutputStream output) {
-        fileName = fileName.replaceAll("%20", " ");
+        fileName = fileName.replace("%20", " ");
         BufferedInputStream fis;
         try {
             fis = new BufferedInputStream(mainActivity.getAssets().open(fileName));
@@ -464,12 +523,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
      */
     private void displayFolder(File d, BufferedOutputStream os) {
         try {
-            os.write(header_1.getBytes());
-            String title = "<title>" + d.getPath() + "</title>";
-            os.write(title.getBytes());
-            os.write(css.getBytes());
-            os.write(js.getBytes());
-            os.write(header_2.getBytes());
+
+
             System.out.println(d.getPath());
             System.out.println(d.exists());
 //                first, if not in top directory, put a link for it.
@@ -477,10 +532,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
             if(!d.getPath().equals("/storage/emulated/0")) // if not top directory, look in above directory.
             {
                 os.write("<div class=\"dir\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
-                String fp = d.getParent();
-                fp = fp.replaceAll(" ", "+");
-                os.write(fp.getBytes());
-                os.write("/\" />".getBytes());
+                os.write(getDirectoryUrl(d.getParentFile()).getBytes());
+                os.write("\" />".getBytes());
                 os.write("Parent Folder".getBytes());
                 os.write("</a></div>".getBytes());
             }
@@ -494,9 +547,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
                 {
 
                     os.write("<div class=\"dir\"><a href=\"".getBytes());
-                    String fp = f.getPath() + "/";
-                    fp = fp.replaceAll(" ", "+");
-                    os.write(fp.getBytes());
+
+                    os.write(getDirectoryUrl(f).getBytes());
                     os.write("\"><img src=\"/wf_images/openfolder.gif\"  title=\"Open Folder\" />".getBytes());
                     os.write(f.getName().getBytes());
                     os.write("</a></div>".getBytes());
@@ -507,10 +559,10 @@ public class SingleConnection implements Runnable, AutoCloseable {
             {
                 if(!f.isDirectory()) // then show each non-directory file, and its size
                 {
-                    String fpath = f.toURI().getPath();
-//                                System.out.println(fpath);
-                    while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
-                        fpath = fpath.replaceFirst(" ", "+");
+//                    String fpath = f.toURI().getPath();
+////                                System.out.println(fpath);
+//                    while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
+//                        fpath = fpath.replaceFirst(" ", "+");
 
                     String fname = f.getName();
                     os.write(("<div class=\"file\" name=\"" + fname + "\">").getBytes());
@@ -519,17 +571,18 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     // rename button
                     os.write("<img src=\"/wf_images/rename.gif\" alt=\"Rename file\" title=\"Rename file\" name=\"".getBytes());
                     os.write(fname.getBytes());
-                    os.write("\" onclick=\"rename(this)\"/>".getBytes());
+                    os.write(("\" onclick=\"rename(this, \'" + d.getPath() + "\')\" />").getBytes());
+                        // results in onclick="rename(this, '<path>')" where <path> is the directory
 
 
                     // delete button
-                    os.write("<form method=\"post\" action=\"delete.html?".getBytes());
-                    os.write(fname.getBytes());
+                    os.write("<form method=\"post\" action=\"".getBytes());
+                    os.write(getDeleteUrl(f).getBytes());
                     os.write("\"><input type=\"image\" src=\"/wf_images/delete.gif\" alt=\"Delete file\" title=\"Delete file\" /></form></a>".getBytes());
 
                     //download button and link
                     os.write("<a target=\"_blank\" href=\"".getBytes());
-                    os.write(fpath.getBytes());
+                    os.write(getFileUrl(f).getBytes());
                     os.write("\"><img src=\"/wf_images/download.gif\" title=\"Download file (opens new tab)\" />".getBytes());
                     os.write(fname.getBytes());
                     os.write("</a>".getBytes());
@@ -541,12 +594,61 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     os.write(" bytes</span></div>".getBytes());
                 }
             }
-
-            os.write(footer.getBytes());
-            os.close();
         } catch (IOException ex) {
             System.out.println("couldn't write html file back to requester");
             ex.printStackTrace();
+        }
+    }
+
+    private String getDirectoryUrl(File dir) {
+        String fp = "/index.html?path=" + Uri.encode(dir.getPath() + "/");
+//        fp = fp.replaceAll(" ", "%20");
+        return fp;
+    }
+    private String getUploadUrl(File dir) {
+        String fp = "/upload.html?path=" + Uri.encode(dir.getPath() + "/");
+//        fp = fp.replaceAll(" ", "%20");
+        return fp;
+    }
+    private String getDeleteUrl(File dir) {
+        String fp = "/delete.html?path=" + Uri.encode(dir.getParent() + "/") + "&file=" + Uri.encode(dir.getName());
+        return fp;
+    }
+    private String getFileUrl(File f) {
+        String fp = "/download.html?path=" + Uri.encode(f.getParent() + "/") + "&file=" + Uri.encode(f.getName());
+        return fp;
+    }
+
+
+    /**
+     * Writes a string of HTML representing the navigation tree of a directory
+     * to a stream.
+     * @param dir Directory of which the navigation tree will be calculated.
+     * @param os Stream to write the HTML to.
+     */
+    private void displayNavigationTree(File dir, BufferedOutputStream os) throws IOException {
+        File curr = dir;
+        ArrayList<File> list = new ArrayList<>();
+
+        list.add(new File(curr.getPath()));
+
+        while(curr != null && !curr.getPath().contentEquals("/storage/emulated/0"))
+        {
+            curr = curr.getParentFile();
+            list.add(new File(curr.getPath()));
+            System.out.println(curr.getPath());
+        }
+
+        for(int i = list.size()-1 ; i >= 0; i--) // start at highest parent string, then go down.
+        {
+            String name = list.get(i).getName();
+            if(name.equals("0"))
+                name = "Root";
+            int spaces = list.size()-1 - i;
+            os.write(("<div><a style=\"padding-left:" + spaces + "em\" " +
+                    "href=\"" + getDirectoryUrl(list.get(i)) + "\">" +
+                    name +
+                    "</a></div>").getBytes());
         }
     }
 
