@@ -19,13 +19,39 @@ public class ConnectionAcceptor implements Runnable {
     boolean stop = false;
     int port = 0;
     ServerSocket ssock;
-    HashSet<SingleConnection> hsT;
-
+    HashSet<SingleConnection> hsT; // connection list
+    HashSet<InetAddress> hs; // unique ip list
+    HashSet<InetAddress> hsP; // authorized users list
 
 
     ConnectionAcceptor(MainActivity mainActivity){
         this.mainActivity = mainActivity;
 
+    }
+
+    /**
+     * Authorizes a connection and adds it to the list
+     * @param conn Connection attempting to authorize
+     * @param password Password attempted by connection
+     * @return True if correct password
+     */
+    synchronized boolean authUser(SingleConnection conn, String password)
+    {
+//        if(password == mainActivity.)
+        if(password.equals(mainActivity.getPassword())) {
+            if(hsP.contains(conn.sock.getInetAddress()))
+                hsP.add(conn.sock.getInetAddress());
+            return true;
+        }
+        else
+            return false;
+    }
+    synchronized boolean getAuth(InetAddress addr)
+    {
+        if(hsP.contains(addr))
+            return true;
+        else
+            return false;
     }
 
     synchronized void removeConn(SingleConnection conn)
@@ -71,7 +97,8 @@ public class ConnectionAcceptor implements Runnable {
 
         System.out.println("Set ip: " + ipstr);
 
-        HashSet<InetAddress> hs = new HashSet<>();
+
+        hs = new HashSet<>();
 
         hsT = new HashSet<>();
 
@@ -81,7 +108,7 @@ public class ConnectionAcceptor implements Runnable {
                 Socket s = ssock.accept();
                 System.out.println("sendbuffersize:" + s.getSendBufferSize());
                 System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
-                SingleConnection serv = new SingleConnection(mainActivity, this, s, ipstr);
+                SingleConnection serv = new SingleConnection(mainActivity, this, s, ipstr, getAuth(s.getInetAddress()));
                 addConn(serv);
                 new Thread(serv).start();
 

@@ -35,12 +35,14 @@ public class SingleConnection implements Runnable, AutoCloseable {
     private ConnectionAcceptor parent;
     Socket sock;
     String url; // in case Absolute URL is needed
+    private boolean auth;
 
-    SingleConnection(MainActivity mainActivity, ConnectionAcceptor connectionAcceptor, Socket s, String ipstr) {
+    SingleConnection(MainActivity mainActivity, ConnectionAcceptor connectionAcceptor, Socket s, String ipstr, boolean authorized) {
         this.mainActivity = mainActivity;
         parent = connectionAcceptor;
         sock = s;
         url = ipstr;
+        auth = authorized;
     }
 
     @Override
@@ -101,14 +103,13 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
 
             System.out.println("\n responding");
-
-            BufferedOutputStream os = new BufferedOutputStream(sock.getOutputStream(), 100000);
+            final int WRITE_BUFFER_SIZE = 1024*1024; // 1 MB
+            BufferedOutputStream os = new BufferedOutputStream(sock.getOutputStream(), WRITE_BUFFER_SIZE);
             PostInfo pi = new PostInfo(hr.getRequestLine().getMethod().equalsIgnoreCase("post"), boundary, length);
             processRequest(is, os, conn, pi, hr);
 
-
-
             os.close();
+            sock.close();
 
 
         } catch (IOException e) {
@@ -219,6 +220,15 @@ public class SingleConnection implements Runnable, AutoCloseable {
     final String directory_end = "</td>";
     final String container_end = "</tr></div></body></html>";
 
+    final String login_markup_start = "<form action=\"";
+    // insert url
+    final String login_markup_end = "\" method=\"post\">" +
+            "Password: <input type=\"password\" name=password>" +
+            "<input type=\"submit\" value=\"Submit\"" +
+            "</form>";
+
+
+    final String BASE_DIRECTORY = "/storage/emulated/0";
 
     private void processRequest(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
 
@@ -231,6 +241,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
         StringBuilder dir = new StringBuilder();
         if(uriObj.getQueryParameter("path") != null)
             dir.append(uriObj.getQueryParameter("path"));
+        else
+            dir.append(BASE_DIRECTORY);
 
         System.out.println("dir preproc = " + dir);
 
@@ -248,8 +260,19 @@ public class SingleConnection implements Runnable, AutoCloseable {
         File dirFile;
         dirFile = new File(dir.toString()); // convert spaces appropriately
         if(!dirFile.exists() || !dirFile.isDirectory()) // catch issues in the directory path
-            dirFile = new File("/storage/emulated/0");
+        {
+            dir.replace(0,dir.length(), BASE_DIRECTORY); // replace it with BASE_DIRECTORY if invalid
+            dirFile = new File(dir.toString());
+        }
         System.out.println("directory = " + dirFile.getAbsolutePath());
+
+        // when not auth and dir != base, serve login page instead
+        if(!auth && !dir.toString().contentEquals(BASE_DIRECTORY))
+        {
+            sendOk(conn, hr);
+            serveLoginPage(dirFile, uriObj, os);
+            return;
+        }
 
         //handle uploading of files
         if (pi.isPost && uri.equalsIgnoreCase("/upload.html"))
@@ -294,9 +317,26 @@ public class SingleConnection implements Runnable, AutoCloseable {
             if (!pi.isPost) // send ok if not post, because post already sent headers.
                 sendOk(conn, hr);
             servePage(dirFile, os);
-            os.close();
-            sock.close();
         }
+    }
+
+    private void serveLoginPage(File d, Uri uriObj, BufferedOutputStream os) {
+        try {
+            os.write(header_start.getBytes());
+            String title = "<title>Log in</title>";
+            os.write(title.getBytes());
+//            os.write(css.getBytes());
+//            os.write(js.getBytes());
+            os.write(header_end.getBytes());
+            os.write(login_markup_start.getBytes());
+            String url = "login.html?";
+//            url = url + d.getPath(); WORK HERE
+            os.write(login_markup_end.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     private void servePage(File d, BufferedOutputStream os) {
@@ -529,7 +569,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             System.out.println(d.exists());
 //                first, if not in top directory, put a link for it.
 
-            if(!d.getPath().equals("/storage/emulated/0")) // if not top directory, look in above directory.
+            if(!d.getPath().equals(BASE_DIRECTORY)) // if not top directory, look in above directory.
             {
                 os.write("<div class=\"dir\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
                 os.write(getDirectoryUrl(d.getParentFile()).getBytes());
@@ -632,7 +672,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
         list.add(new File(curr.getPath()));
 
-        while(curr != null && !curr.getPath().contentEquals("/storage/emulated/0"))
+        while(curr != null && !curr.getPath().contentEquals(BASE_DIRECTORY))
         {
             curr = curr.getParentFile();
             list.add(new File(curr.getPath()));
