@@ -38,8 +38,10 @@ public class ConnectionAcceptor implements Runnable {
     synchronized boolean authUser(SingleConnection conn, String password)
     {
 //        if(password == mainActivity.)
+        System.out.println("pass: " + password + " attempted");
+        System.out.println("pass=" + mainActivity.getPassword());
         if(password.equals(mainActivity.getPassword())) {
-            if(hsP.contains(conn.sock.getInetAddress()))
+            if(!hsP.contains(conn.sock.getInetAddress()))
                 hsP.add(conn.sock.getInetAddress());
             return true;
         }
@@ -101,6 +103,7 @@ public class ConnectionAcceptor implements Runnable {
         hs = new HashSet<>();
 
         hsT = new HashSet<>();
+        hsP = new HashSet<>();
 
         while(!stop)
         {

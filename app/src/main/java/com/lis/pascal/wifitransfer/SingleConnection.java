@@ -222,7 +222,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
     final String login_markup_start = "<form action=\"";
     // insert url
-    final String login_markup_end = "\" method=\"post\">" +
+    final String login_markup_end = "\" enctype=\"multipart/form-data\" method=\"post\">" +
             "Password: <input type=\"password\" name=password>" +
             "<input type=\"submit\" value=\"Submit\"" +
             "</form>";
@@ -267,10 +267,10 @@ public class SingleConnection implements Runnable, AutoCloseable {
         System.out.println("directory = " + dirFile.getAbsolutePath());
 
         // when not auth and dir != base, serve login page instead
-        if(!auth && !dir.toString().contentEquals(BASE_DIRECTORY))
+        if(!auth && !dir.toString().contentEquals(BASE_DIRECTORY) && !uri.equalsIgnoreCase("/login.html"))
         {
             sendOk(conn, hr);
-            serveLoginPage(dirFile, uriObj, os);
+            serveLoginPage(dirFile, os);
             return;
         }
 
@@ -295,6 +295,21 @@ public class SingleConnection implements Runnable, AutoCloseable {
         {
             fileRename(dirFile, is, pi);
             sendOk(conn, hr);
+        } else if (pi.isPost && uri.equalsIgnoreCase("/login.html")) // if going to rename
+        {
+            if(login(dirFile, is, pi)) {
+                sendOk(conn, hr);
+                auth = true;
+            }
+            else // login failed, serve login page again.
+            {
+                sendOk(conn, hr);
+                serveLoginPage(dirFile, os);
+                return;
+            }
+
+
+
         } else if (uri.contains("wf_images/") || uri.endsWith("favicon.ico")) // if a website image
         {
             String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
@@ -320,7 +335,15 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
     }
 
-    private void serveLoginPage(File d, Uri uriObj, BufferedOutputStream os) {
+    private boolean login(File dirFile, BufferedInputStream is, PostInfo pi) {
+        HashMap<String, String> i = getArgs(is, pi);
+        if(parent.authUser(this, i.get("password"))) // if login successful
+            return true;
+        else
+            return false;
+    }
+
+    private void serveLoginPage(File d, BufferedOutputStream os) {
         try {
             os.write(header_start.getBytes());
             String title = "<title>Log in</title>";
@@ -329,8 +352,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 //            os.write(js.getBytes());
             os.write(header_end.getBytes());
             os.write(login_markup_start.getBytes());
-            String url = "login.html?";
-//            url = url + d.getPath(); WORK HERE
+            os.write(getLoginUrl(d).getBytes());
             os.write(login_markup_end.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
@@ -366,62 +388,69 @@ public class SingleConnection implements Runnable, AutoCloseable {
     }
 
 
-    private boolean fileRename(File d, BufferedInputStream is, PostInfo pi) throws IOException {
-        if(pi.length < 3000) // if not this, then it is absurdly long, and forget about it
-        {
-            byte[] byteArr = new byte[pi.length];
-
-            int count = 0;
-            while (count < pi.length) {
+    private HashMap<String, String> getArgs(BufferedInputStream is, PostInfo pi)
+    {
+        if(pi.length > 3000) // if so, something is wrong because the post info is far bigger than expected
+            return null;
+        byte[] byteArr = new byte[pi.length];
+        int count = 0;
+        while (count < pi.length) {
+            try {
                 count += is.read(byteArr);
+            } catch (IOException e) {
+                System.out.println("could not read from http header");
+                e.printStackTrace();
+                return null;
             }
+        }
+
+        String argStr = new String(byteArr, Charset.forName("UTF-8"));
+        System.out.println("argstr:\n" + argStr);
+        System.out.println("boundary:\n" + pi.boundary);
+
+        return parseFormData(argStr, pi.boundary);
 
 
-            String argStr = new String(byteArr, Charset.forName("UTF-8"));
-            System.out.println("argstr:\n" + argStr);
-            System.out.println("boundary:\n" + pi.boundary);
+    }
+    private void fileRename(File d, BufferedInputStream is, PostInfo pi) throws IOException {
+        HashMap<String, String> hm = getArgs(is, pi);
+        if (hm == null) {
+            System.out.println("rename failed");
+            return;
+        }
 
-            HashMap<String, String> hm = parseFormData(argStr, pi.boundary);
-            System.out.println("hashmap:");
-            for(Map.Entry<String, String> ent : hm.entrySet())
-            {
-                System.out.println(ent.getKey() + " : " + ent.getValue());
-            }
+        System.out.println("hashmap:");
+        for (Map.Entry<String, String> ent : hm.entrySet()) {
+            System.out.println(ent.getKey() + " : " + ent.getValue());
+        }
 
-            String oldName = hm.get("oldName");
-            String newName = hm.get("newName");
+        String oldName = hm.get("oldName");
+        String newName = hm.get("newName");
 
-            // get two arguments out of uriEnd
+        // get two arguments out of uriEnd
 
-            CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_rename);
+        CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_rename);
 
-            if (cb.isChecked()) {
-                if(oldName != null && newName != null && !newName.equalsIgnoreCase(""))
-                {
-                    File from = new File(d, oldName);
-                    File to = new File(d, newName);
-                    System.out.println("oldFile exists?:" + from.exists());
-                    System.out.println("newFile exists?:" + to.exists());
+        if (cb.isChecked()) {
+            if (oldName != null && newName != null && !newName.equalsIgnoreCase("")) {
+                File from = new File(d, oldName);
+                File to = new File(d, newName);
+                System.out.println("oldFile exists?:" + from.exists());
+                System.out.println("newFile exists?:" + to.exists());
 
-                    boolean success = from.renameTo(to);
-                    if(success)
-                    {
-                        System.out.println("File " + oldName + " renamed to " + newName);
-                        mainActivity.makeToast("File " + oldName + " renamed to " + newName, true);
-                    }
-                    else
-                    {
-                        System.out.println("rename failed");
-                        System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
+                boolean success = from.renameTo(to);
+                if (success) {
+                    System.out.println("File " + oldName + " renamed to " + newName);
+                    mainActivity.makeToast("File " + oldName + " renamed to " + newName, true);
+                } else {
+                    System.out.println("rename failed");
+                    System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
 
-                    }
                 }
-
-            } else
-                mainActivity.makeToast("Rename attempted by " + sock.getInetAddress() + ", and failed", false);
+            }
 
         }
-        return false;
+        return;
     }
 
     private void deleteFile(File d, String fileName) {
@@ -640,6 +669,10 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
     }
 
+    private String getLoginUrl(File dir) {
+        String fp = "/login.html?path=" + Uri.encode(dir.getPath() + "/");
+        return fp;
+    }
     private String getDirectoryUrl(File dir) {
         String fp = "/index.html?path=" + Uri.encode(dir.getPath() + "/");
 //        fp = fp.replaceAll(" ", "%20");

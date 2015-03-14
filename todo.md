@@ -6,8 +6,12 @@
 * Maybe move markup (html) into another file
 
 * Fix downloads so they have the right name (add command parameter to urls for downloads, and let the URI be the image name?)
-* Set permissions on directories, and set default file location to a folder.
-    * password protection option
+
+* password protection option
+    * Improve it; change default folder?
+    * allow it to be disabled
+    * let app switch activities without closing the ConnectionAcceptor
+
 
 * Further improve interface
     * Try Settings Activity
