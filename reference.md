@@ -12,3 +12,5 @@
         * https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer
 * xml special chars
     * http://stackoverflow.com/questions/1091945/what-characters-do-i-need-to-escape-in-xml-documents
+* settings activity
+    * http://developer.android.com/guide/topics/ui/settings.html

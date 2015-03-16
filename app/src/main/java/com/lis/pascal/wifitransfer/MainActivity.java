@@ -2,21 +2,15 @@ package com.lis.pascal.wifitransfer;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.media.audiofx.BassBoost;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -32,9 +26,6 @@ public class MainActivity extends ActionBarActivity {
         new Thread(acceptor).start();
     }
 
-    public void onCheckboxClicked(View view) {
-
-    }
 
 
 
@@ -66,23 +57,30 @@ public class MainActivity extends ActionBarActivity {
 
     protected void onStop() {
         super.onStop();
+    }
+
+    protected void onDestroy() {
+        super.onDestroy();
         acceptor.stop();
         System.out.println("thread stopped");
     }
 
     String getPassword(){
-        return PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("password_value_checkbox", "not found");
+        return PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("password_value", "not found");
+    }
+
+    boolean isPasswordRequired(){
+        return PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean("password_active_checkbox", true);
     }
 
     void checkPassword(){
-        String x = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("password_value_checkbox", "");
+        String x = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("password_value", "");
         System.out.println("pass=" + x);
-//        Set<? extends Map.Entry<String, ?>> x = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getAll().entrySet();
-//        System.out.println("prefs");
-//        for(Map.Entry i : x) {
-//            System.out.println(i.getKey() + ":" + i.getValue());
-//        }
-//        System.out.println("prefsEnd");
+    }
+
+    void showPreferenceList(){
+        for (Map.Entry x : PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getAll().entrySet())
+            System.out.println(x.getKey() + ":" + x.getValue());
     }
 
     @Override

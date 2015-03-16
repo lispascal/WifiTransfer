@@ -26,30 +26,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_download"
-        android:textSize="35dp"
-        android:onClick="onCheckboxClicked"/>
+        android:textSize="35dp"/>
     <CheckBox android:id="@+id/checkbox_upload"
         android:checked="true"
         android:layout_below="@+id/checkbox_download"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_upload"
-        android:textSize="35dp"
-        android:onClick="onCheckboxClicked"/>
+        android:textSize="35dp"/>
     <CheckBox android:id="@+id/checkbox_rename"
         android:layout_below="@+id/checkbox_upload"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_rename"
-        android:textSize="35dp"
-        android:onClick="onCheckboxClicked"/>
+        android:textSize="35dp"/>
     <CheckBox android:id="@+id/checkbox_deletion"
         android:layout_below="@+id/checkbox_rename"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_delete"
         android:textSize="35dp"
-        android:onClick="onCheckboxClicked"
         android:checked="false" />
 
     <CheckBox android:id="@+id/checkbox_toasts"
@@ -58,8 +54,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/button_toast"
-        android:textSize="35dp"
-        android:onClick="onCheckboxClicked"/>
+        android:textSize="35dp"/>
 
 
 </RelativeLayout>

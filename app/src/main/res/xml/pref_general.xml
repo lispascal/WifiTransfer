@@ -4,12 +4,12 @@
         android:key="password_active_checkbox"
         android:title="@string/pref_require_password"
         android:summary="@string/pref_description_require_password"
-        android:defaultValue="true" />
+        android:defaultValue="false" />
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
     <EditTextPreference
-        android:key="password_value_checkbox"
+        android:key="password_value"
         android:dependency="password_active_checkbox"
         android:title="@string/pref_title_password"
         android:defaultValue="@string/pref_default_password"

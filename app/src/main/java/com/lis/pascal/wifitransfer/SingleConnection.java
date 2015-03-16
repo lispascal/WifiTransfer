@@ -175,8 +175,12 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "   cursor: pointer; " +
             "   border: 1px solid black;" +
             "   }" +
+            "#bodyContainer {width: 100%;" +
+            "   height: 100%;" +
+            "   background-color: white" +
+            "   }\n" +
             "#contentContainer {width:95%;" +
-            "   background-clip: padding-box;" +
+//            "   background-clip: padding-box;" +
             "   }\n" +
             "#navigationContainer {width:15%;" +
             "   border-radius: 12px;" +
@@ -203,7 +207,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "</style>";
 
     final String header_start = "<html><head>";
-    final String header_end = "</head><body>";
+    final String header_end = "</head><body><div id=\"bodyContainer\">";
     final String upload_form_start = "<h1>FileServer"
             + "<form method=\"post\" action=\"";
 
@@ -212,13 +216,13 @@ public class SingleConnection implements Runnable, AutoCloseable {
             + "<input type=\"submit\" value=\"Send\" />"
             + "</form>"
             + "</h1>";
-    final String container_start = "<table id=\"contentContainer\"><tr>";
+    final String container_start = "<table id=\"contentContainer\"><tbody><tr>";
     final String navigation_start = "<td id=\"navigationContainer\">";
     final String navigation_end = "</td>";
 
     final String directory_start= "<td id=\"directoryContainer\">";
     final String directory_end = "</td>";
-    final String container_end = "</tr></div></body></html>";
+    final String container_end = "</tr></tbody></table></div></body></html>";
 
     final String login_markup_start = "<form action=\"";
     // insert url
@@ -267,7 +271,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         System.out.println("directory = " + dirFile.getAbsolutePath());
 
         // when not auth and dir != base, serve login page instead
-        if(!auth && !dir.toString().contentEquals(BASE_DIRECTORY) && !uri.equalsIgnoreCase("/login.html"))
+        if(!auth && !dir.toString().contentEquals(BASE_DIRECTORY) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
         {
             sendOk(conn, hr);
             serveLoginPage(dirFile, os);
@@ -297,15 +301,19 @@ public class SingleConnection implements Runnable, AutoCloseable {
             sendOk(conn, hr);
         } else if (pi.isPost && uri.equalsIgnoreCase("/login.html")) // if going to rename
         {
-            if(login(dirFile, is, pi)) {
+            if(login(is, pi)) {
                 sendOk(conn, hr);
-                auth = true;
             }
             else // login failed, serve login page again.
             {
-                sendOk(conn, hr);
-                serveLoginPage(dirFile, os);
-                return;
+                // if auth still required, serve login
+                if(mainActivity.isPasswordRequired()) {
+                    sendOk(conn, hr);
+                    serveLoginPage(dirFile, os);
+                    return;
+                }
+                else // otherwise, it should act as if there was never a login page. Doesn't auth user but doesn't require it
+                    sendOk(conn, hr); // a very niche case
             }
 
 
@@ -335,12 +343,23 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
     }
 
-    private boolean login(File dirFile, BufferedInputStream is, PostInfo pi) {
+    synchronized private boolean login(BufferedInputStream is, PostInfo pi) {
         HashMap<String, String> i = getArgs(is, pi);
         if(parent.authUser(this, i.get("password"))) // if login successful
+        {
+            auth = true;
+            mainActivity.makeToast("User authorized: " + sock.getInetAddress(), false);
             return true;
-        else
+        }
+        else {
+            mainActivity.makeToast("User failed to authorize: " + sock.getInetAddress(), false);
             return false;
+        }
+    }
+
+    // to be called from settings activity on checkbox switch on "de-authenticate users"
+    synchronized private void logout() {
+        auth = false;
     }
 
     private void serveLoginPage(File d, BufferedOutputStream os) {
@@ -351,9 +370,11 @@ public class SingleConnection implements Runnable, AutoCloseable {
 //            os.write(css.getBytes());
 //            os.write(js.getBytes());
             os.write(header_end.getBytes());
+            os.write(container_start.getBytes());
             os.write(login_markup_start.getBytes());
             os.write(getLoginUrl(d).getBytes());
             os.write(login_markup_end.getBytes());
+            os.write(container_end.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -450,7 +471,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
             }
 
         }
-        return;
     }
 
     private void deleteFile(File d, String fileName) {
@@ -675,12 +695,10 @@ public class SingleConnection implements Runnable, AutoCloseable {
     }
     private String getDirectoryUrl(File dir) {
         String fp = "/index.html?path=" + Uri.encode(dir.getPath() + "/");
-//        fp = fp.replaceAll(" ", "%20");
         return fp;
     }
     private String getUploadUrl(File dir) {
         String fp = "/upload.html?path=" + Uri.encode(dir.getPath() + "/");
-//        fp = fp.replaceAll(" ", "%20");
         return fp;
     }
     private String getDeleteUrl(File dir) {
@@ -742,7 +760,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
         boolean endOfLine = false;
 
         int newLines = 0;
-//            StringBuilder line = new StringBuilder("");
 
         final int LIMIT = 1460 * 10; // usual max packet size for tcp over ip, times 10
         byte[] xArr = new byte[LIMIT];
@@ -751,10 +768,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
         int pos = 0;
         System.out.println(pi.length);
         int bytesProcessed = 0;
-//        int bytesCompleted = 0;
         int bytesAdded = 0;
         int prevInArray = 0;
-//        int preambleSize = 0;
         while(bytesProcessed < pi.length)
         {
             if(!fileCopying)
@@ -762,8 +777,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
                 x = is.read();
                 System.out.print((char)x);
                 bytesProcessed++;
-//                bytesCompleted++;
-//                preambleSize++;
 
                 lineArr[pos++] = (char) x;
 
@@ -777,10 +790,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
                 if(endOfLine) // if not copying yet, look for file name.
                 {
-//                                String lStr = line.toString();
                     String lStr = new String(lineArr);
 
-//                                    System.out.println(lStr);
                     if(lStr.contains("filename=\""))
                     {
                         // new string starts where (filename=") ends
@@ -818,9 +829,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     System.out.println("l:" + xArr.length + " w:" + prevInArray);
                     throw ai;
                 }
-//                    System.out.println("bA:" + bytesAdded + "  bP:" + bytesProcessed);
                 // make new string only out of the array part written
-//                    String xStr = new String(xArr, 0, validInArray); // index is to limit string to what we just made in array.
                 String xStr = new String(xArr, 0, validInArray, Charset.forName("US-ASCII"));
 
 
@@ -845,16 +854,11 @@ public class SingleConnection implements Runnable, AutoCloseable {
                 {
                     int endIndex = xStr.lastIndexOf('\n');
 
-//                        System.out.println(xStr);
-//                            delayWrite(fs, bArr, 0, pos);
-//                        System.out.println("e" + endIndex + " w" + prevInArray + " b" + bytesAdded);
                     if(endIndex == -1)
                         endIndex = validInArray; // set to write the whole string
                     else if(endIndex == 0) // write the newline if it's first character instead of breaking.
                         endIndex = 1;
                     fs.write(xArr, 0, endIndex);
-//                    bytesCompleted += endIndex;
-//                        System.out.println("cmp:" + bytesCompleted);
 
                     //whole string size - written string size = amount left over.
                     // copy these elements to the start of the array.
