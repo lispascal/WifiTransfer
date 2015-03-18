@@ -358,7 +358,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
     }
 
     // to be called from settings activity on checkbox switch on "de-authenticate users"
-    synchronized private void logout() {
+    synchronized void logout() {
         auth = false;
     }
 

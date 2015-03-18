@@ -55,6 +55,10 @@ public class ConnectionAcceptor implements Runnable {
         else
             return false;
     }
+    synchronized void removeAllAuth()
+    {
+        hsP.clear();
+    }
 
     synchronized void removeConn(SingleConnection conn)
     {
@@ -136,5 +140,12 @@ public class ConnectionAcceptor implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void deauth() {
+        for(SingleConnection i : hsT)
+            i.logout();
+
+        removeAllAuth();
     }
 }

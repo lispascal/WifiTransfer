@@ -47,7 +47,6 @@
         android:text="@string/button_delete"
         android:textSize="35dp"
         android:checked="false" />
-
     <CheckBox android:id="@+id/checkbox_toasts"
         android:checked="true"
         android:layout_below="@+id/checkbox_deletion"
@@ -55,6 +54,15 @@
         android:layout_height="wrap_content"
         android:text="@string/button_toast"
         android:textSize="35dp"/>
+    <Button android:id="@+id/deauth"
+        android:layout_below="@id/checkbox_toasts"
+        android:text="@string/button_deauth"
+        android:textSize="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="deauth"
+
+        />
 
 
 </RelativeLayout>
