@@ -3,15 +3,11 @@
 * Bypass string creation, comparison, and searching by implementing a byte array/bytewise version of each.
 
 * Move javascript into another file
-* Maybe move markup (html) into another file
+* Move markup (html) into another file
 
-* Fix downloads so they have the right name (add command parameter to urls for downloads, and let the URI be the image name?)
+* change default (unprivileged) folder?
 
-* password protection option
-    * Improve it; change default folder?
-    * allow it to be disabled
-    * let app switch activities without closing the ConnectionAcceptor
-
+* hint file size on file downloads in header
 
 * Further improve interface
     * Try Settings Activity

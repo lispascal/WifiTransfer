@@ -2,6 +2,7 @@ package com.lis.pascal.wifitransfer;
 
 import android.net.Uri;
 import android.os.Environment;
+import android.text.format.Time;
 import android.widget.CheckBox;
 
 import org.apache.http.Header;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -204,6 +206,10 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "   height:1em;width:1em;" +
             "   border: 1px solid black;" +
             "   }" +
+            "div.file span {float:right;" +
+            "   width:15%;" +
+            "   text-align:right" +
+            "   }" +
             "</style>";
 
     final String header_start = "<html><head>";
@@ -271,7 +277,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         System.out.println("directory = " + dirFile.getAbsolutePath());
 
         // when not auth and dir != base, serve login page instead
-        if(!auth && !dir.toString().contentEquals(BASE_DIRECTORY) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
+        if(!auth && !dirFile.getAbsolutePath().contentEquals(BASE_DIRECTORY) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
         {
             sendOk(conn, hr);
             serveLoginPage(dirFile, os);
@@ -324,7 +330,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             uriEnd = uriEnd.replace("%20", " ");
             sendOk(conn, hr);
             serveAsset(uriEnd, os);
-        } else if (uri.equalsIgnoreCase("/download.html")) // download file at url
+        } else if (uri.contains("/download/")) // download file at url
         {
             String fileName = uriObj.getQueryParameter("file");
             if(fileName != null) {
@@ -644,6 +650,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
                 }
             }
+
+            GregorianCalendar currentTime = new GregorianCalendar();
             for(File f : d.listFiles())
             {
                 if(!f.isDirectory()) // then show each non-directory file, and its size
@@ -676,11 +684,26 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     os.write(fname.getBytes());
                     os.write("</a>".getBytes());
 
-
                     // size of file in bytes
-                    os.write("<span style=\"float:right;\">".getBytes());
+                    os.write("<span>".getBytes());
                     os.write(String.valueOf(f.length()).getBytes());
-                    os.write(" bytes</span></div>".getBytes());
+                    os.write(" bytes</span>".getBytes());
+
+
+
+                    String timeString = new String();
+                    long millis = currentTime.getTimeInMillis() - f.lastModified();
+                    if(millis < 1000*60) // 1 minute
+                        timeString = String.valueOf(millis/1000) + " seconds ago";
+                    else if(millis < 1000*60*60) // 1 hour
+                        timeString = String.valueOf(millis/1000/60) + " minutes ago";
+                    else if(millis < 1000*60*60*24) // 1 day
+                        timeString = String.valueOf(millis/1000/60/60) + " hours ago";
+                    else // multiple days
+                        timeString = String.valueOf(millis/1000/60/60/24) + " days ago";
+                    os.write(("<span id=\"" + millis + "\">").getBytes());
+                    os.write(timeString.getBytes());
+                    os.write("</span></div>".getBytes());
                 }
             }
         } catch (IOException ex) {
@@ -706,7 +729,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         return fp;
     }
     private String getFileUrl(File f) {
-        String fp = "/download.html?path=" + Uri.encode(f.getParent() + "/") + "&file=" + Uri.encode(f.getName());
+        String fp = "/download/" + Uri.encode(f.getName()) + "?path=" + Uri.encode(f.getParent() + "/") + "&file=" + Uri.encode(f.getName());
         return fp;
     }
 
