@@ -2,7 +2,6 @@ package com.lis.pascal.wifitransfer;
 
 import android.net.Uri;
 import android.os.Environment;
-import android.text.format.Time;
 import android.widget.CheckBox;
 
 import org.apache.http.Header;
@@ -29,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
-* Created by Tath on 2/15/2015.
+* Created by lispascal on 2/15/2015.
 */
 public class SingleConnection implements Runnable, AutoCloseable {
 
@@ -194,23 +193,37 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "   padding: 4px;" +
             "   }\n" +
             "div.file {border: 1px solid black;" +
-            "   }" +
+            "   }\n" +
             "div.file>form {display: inline;" +
-            "   }" +
+            "   }\n" +
             "div.file img {margin-left: 1px;" +
             "   height:1em;width:1em;" +
             "   cursor: pointer; " +
             "   border: 1px solid black;" +
-            "   }" +
+            "   }\n" +
             "div.file input {margin-left: 1px;" +
             "   height:1em;width:1em;" +
             "   border: 1px solid black;" +
-            "   }" +
+            "   }\n" +
             "div.file span {float:right;" +
             "   width:15%;" +
             "   text-align:right" +
-            "   }" +
-            "</style>";
+            "   }\n" +
+            "#tableHead {" +
+            "   border: 1px solid black" +
+            "   }\n" +
+            "#sortByNameSpan {" +
+            "   width: 70%" +
+            "   }\n" +
+            "#sortByDateSpan {" +
+            "   float:right;" +
+            "   width: 15%" +
+            "   }\n" +
+            "#sortBySizeSpan {" +
+            "   float:right;" +
+            "   width: 15%" +
+            "   }\n" +
+            "</style>\n";
 
     final String header_start = "<html><head>";
     final String header_end = "</head><body><div id=\"bodyContainer\">";
@@ -227,6 +240,11 @@ public class SingleConnection implements Runnable, AutoCloseable {
     final String navigation_end = "</td>";
 
     final String directory_start= "<td id=\"directoryContainer\">";
+    final String table_head = "<div id=\"tableHead\">"
+            + "<span id=\"sortByNameSpan\" onclick=\"sortByName()\">Name</span>"
+            + "<span id=\"sortBySizeSpan\" onclick=\"sortBySize()\">Size</span>"
+            + "<span id=\"sortByDateSpan\" onclick=\"sortByDate()\">Last Modified</span>"
+            + "</div>";
     final String directory_end = "</td>";
     final String container_end = "</tr></tbody></table></div></body></html>";
 
@@ -371,7 +389,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
     private void serveLoginPage(File d, BufferedOutputStream os) {
         try {
             os.write(header_start.getBytes());
-            String title = "<title>Log in</title>";
+            String title = "<title>Log in</title>\n";
             os.write(title.getBytes());
 //            os.write(css.getBytes());
 //            os.write(js.getBytes());
@@ -391,10 +409,11 @@ public class SingleConnection implements Runnable, AutoCloseable {
     private void servePage(File d, BufferedOutputStream os) {
         try {
             os.write(header_start.getBytes());
-            String title = "<title>" + d.getPath() + "</title>";
+            String title = "<title>" + d.getPath() + "</title>\n";
             os.write(title.getBytes());
             os.write(css.getBytes());
             os.write(js.getBytes());
+            os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.sortFunctions) + "</script>").getBytes());
             os.write(header_end.getBytes());
             os.write(upload_form_start.getBytes());
             os.write(getUploadUrl(d).getBytes());
@@ -404,6 +423,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             displayNavigationTree(d, os);
             os.write(navigation_end.getBytes());
             os.write(directory_start.getBytes());
+            os.write(table_head.getBytes());
             displayFolder(d, os);
             os.write(directory_end.getBytes());
             os.write(container_end.getBytes());
@@ -684,32 +704,55 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     os.write(fname.getBytes());
                     os.write("</a>".getBytes());
 
-                    // size of file in bytes
-                    os.write("<span>".getBytes());
-                    os.write(String.valueOf(f.length()).getBytes());
-                    os.write(" bytes</span>".getBytes());
+                    printFileSize(os, f);
+                    printModifiedTime(os, currentTime, f);
 
 
-
-                    String timeString = new String();
-                    long millis = currentTime.getTimeInMillis() - f.lastModified();
-                    if(millis < 1000*60) // 1 minute
-                        timeString = String.valueOf(millis/1000) + " seconds ago";
-                    else if(millis < 1000*60*60) // 1 hour
-                        timeString = String.valueOf(millis/1000/60) + " minutes ago";
-                    else if(millis < 1000*60*60*24) // 1 day
-                        timeString = String.valueOf(millis/1000/60/60) + " hours ago";
-                    else // multiple days
-                        timeString = String.valueOf(millis/1000/60/60/24) + " days ago";
-                    os.write(("<span id=\"" + millis + "\">").getBytes());
-                    os.write(timeString.getBytes());
-                    os.write("</span></div>".getBytes());
+                    os.write("</div>".getBytes());
                 }
             }
         } catch (IOException ex) {
             System.out.println("couldn't write html file back to requester");
             ex.printStackTrace();
         }
+    }
+
+    /**
+     * Prints an HTML <span> element containing how long ago file was modified. The
+     * data-modified attribute contains the time in millis the file was modified, for use
+     * in sorting.
+     * @param os The output stream to which the element will be printed.
+     * @param currentTime A GregorianCalendar representing the current time.
+     * @param file The file about which the time modified will be retrieved.
+     * @throws IOException
+     */
+    private void printModifiedTime(BufferedOutputStream os, GregorianCalendar currentTime, File file) throws IOException {
+        String timeString;
+        long millis = currentTime.getTimeInMillis() - file.lastModified();
+        if(millis < 1000*60) // 1 minute
+            timeString = String.valueOf(millis/1000) + " seconds ago";
+        else if(millis < 1000*60*60) // 1 hour
+            timeString = String.valueOf(millis/1000/60) + " minutes ago";
+        else if(millis < 1000*60*60*24) // 1 day
+            timeString = String.valueOf(millis/1000/60/60) + " hours ago";
+        else // multiple days
+            timeString = String.valueOf(millis/1000/60/60/24) + " days ago";
+        os.write(("<span data-modified=\"" + millis + "\">").getBytes());
+        os.write(timeString.getBytes());
+        os.write("</span>".getBytes());
+    }
+
+    /**
+     * Prints size of a file to the outputstream as an HTML <span> element.
+     * Sets the data-size attribute to the bytesize for sorting use.
+     * @param os BufferedOutputStream to print to
+     * @param f file of which to get the size
+     * @throws IOException
+     */
+    private void printFileSize(BufferedOutputStream os, File f) throws IOException {
+        os.write(("<span data-size=\"" + String.valueOf(f.length()) + "\">").getBytes());
+        os.write(String.valueOf(f.length()).getBytes());
+        os.write(" bytes</span>".getBytes());
     }
 
     private String getLoginUrl(File dir) {

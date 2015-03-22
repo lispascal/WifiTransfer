@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sortFunctions">
+        var wasAscending = false;
+        function sortBySize() {
+        var objList = [];
+
+        var arr = document.getElementsByClassName(\"file\");
+        for(var i = 0; i &lt; arr.length; i++) // add all elements to the array with a size value \n
+        {
+            var element = arr[i];
+            var size = element.getElementsByTagName(\"span\")[0].dataset.size;
+            objList.push({\"size\":size, \"ref\":element});
+        }
+
+        // sort elements by size \n
+        if(!wasAscending)
+            objList.sort(function(a, b) {
+                return a.size - b.size; // ascending order = smallest to largest \n
+            });
+        else
+            objList.sort(function(a, b) {
+                return b.size - a.size; // descending order = largest to smallest \n
+            });
+
+        wasAscending = !wasAscending;
+
+        var parent = document.getElementById(\"directoryContainer\");
+
+        // remove elements from parent \n
+        for(var i in objList)
+            parent.removeChild(objList[i].ref);
+
+        // place elements back in parent \n
+        for(var i in objList)
+            parent.appendChild(objList[i].ref);
+
+    }
+
+
+    function sortByDate() {
+        var objList = [];
+
+        var arr = document.getElementsByClassName(\"file\");
+        for(var i = 0; i &lt; arr.length; i++) // add all elements to the array with a time value \n
+        {
+            var element = arr[i];
+            var time = element.getElementsByTagName(\"span\")[1].dataset.modified;
+            objList.push({\"time\":time, \"ref\":element});
+        }
+
+        // sort elements by time \n
+        if(!wasAscending)
+            objList.sort(function(a, b) {
+                return a.time - b.time; // ascending order = newest to oldest \n
+            });
+        else
+            objList.sort(function(a, b) {
+                return b.time - a.time; // descending order = oldest to newest \n
+            });
+
+        wasAscending = !wasAscending;
+
+        var parent = document.getElementById(\"directoryContainer\");
+
+        // remove elements from parent \n
+        for(var i in objList)
+            parent.removeChild(objList[i].ref);
+
+        // place elements back in parent \n
+        for(var i in objList)
+            parent.appendChild(objList[i].ref);
+
+    }\n
+    </string>
+</resources>

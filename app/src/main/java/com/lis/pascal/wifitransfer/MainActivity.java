@@ -29,6 +29,9 @@ public class MainActivity extends ActionBarActivity {
 
 
 
+    Context getAppContext(){
+        return getApplicationContext();
+    }
 
     void makeToast(final String s, final boolean displayForLongTime) {
         final Context context = getApplicationContext();

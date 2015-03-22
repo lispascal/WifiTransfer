@@ -12,7 +12,7 @@ import java.net.Socket;
 import java.util.HashSet;
 
 /**
-* Created by Tath on 2/17/2015.
+* Created by lispascal on 2/17/2015.
 */
 public class ConnectionAcceptor implements Runnable {
     private MainActivity mainActivity;
