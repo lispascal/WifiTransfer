@@ -602,7 +602,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
         if(desiredFile.canRead()) // serve it
         {
-            sendFileDownloadHeader(conn, request, desiredFile.getName());
+            sendFileDownloadHeader(conn, request, desiredFile);
             BufferedInputStream fis = null;
             System.out.println("file exists");
             try {
@@ -940,10 +940,16 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
     }
 
-    private void sendFileDownloadHeader(DefaultHttpServerConnection conn, HttpRequest hr, String desiredFileName) {
+    /**
+     * Sends the Http header for a file download.
+     * @param conn The connection the download header will be sent to.
+     * @param hr The request that this header will be responding to.
+     *           Used for the purposes of giving a ProtocolVersion
+     * @param desiredFile The file that is being downloaded, about which name is needed.
+     */
+    private void sendFileDownloadHeader(DefaultHttpServerConnection conn, HttpRequest hr, File desiredFile) {
         BasicHttpResponse response = new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_OK, null);
-        response.addHeader("content-disposition", "attachment; filename=" + desiredFileName);
-        System.out.println("content-disposition" + "attachment; filename=" + desiredFileName);
+        response.addHeader("Content-Disposition", "attachment; filename=" + desiredFile.getName());
         try {
             conn.sendResponseHeader(response);
         } catch (HttpException | IOException e) {
@@ -951,6 +957,12 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
     }
 
+    /**
+     * Sends OK (200) Http response code on a connection.
+     * @param conn The connection the header will be sent to.
+     * @param hr The request that this header will be responding to.
+     *           Used for the purposes of giving a ProtocolVersion
+     */
     private void sendOk(DefaultHttpServerConnection conn, HttpRequest hr) {
         try {
             conn.sendResponseHeader(new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_ACCEPTED, null));
@@ -960,7 +972,13 @@ public class SingleConnection implements Runnable, AutoCloseable {
             e.printStackTrace();
         }
     }
-
+    /**
+     * Sends Continue (100) Http status code on a connection.
+     * Used when uploading files, to tell the client to send the file data.
+     * @param conn The connection the header will be sent to.
+     * @param hr The request that this header will be responding to.
+     *           Used for the purposes of giving a ProtocolVersion.
+     */
     private void sendContinue(DefaultHttpServerConnection conn, HttpRequest hr) {
         try {
             conn.sendResponseHeader(new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_CONTINUE, null));
