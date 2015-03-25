@@ -205,11 +205,12 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "   height:1em;width:1em;" +
             "   border: 1px solid black;" +
             "   }\n" +
-            "div.file span {float:right;" +
+            "div.file span.info {float:right;" +
             "   width:15%;" +
             "   text-align:right" +
             "   }\n" +
             "#tableHead {" +
+            "   cursor: pointer;" +
             "   border: 1px solid black" +
             "   }\n" +
             "#sortByNameSpan {" +
@@ -649,7 +650,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
                 os.write("<div class=\"dir\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
                 os.write(getDirectoryUrl(d.getParentFile()).getBytes());
                 os.write("\" />".getBytes());
-                os.write("Parent Folder".getBytes());
+                os.write("<span>Parent Folder</span>".getBytes());
                 os.write("</a></div>".getBytes());
             }
 
@@ -664,9 +665,9 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     os.write("<div class=\"dir\"><a href=\"".getBytes());
 
                     os.write(getDirectoryUrl(f).getBytes());
-                    os.write("\"><img src=\"/wf_images/openfolder.gif\"  title=\"Open Folder\" />".getBytes());
+                    os.write("\"><img src=\"/wf_images/openfolder.gif\"  title=\"Open Folder\" /><span>".getBytes());
                     os.write(f.getName().getBytes());
-                    os.write("</a></div>".getBytes());
+                    os.write("</span></a></div>".getBytes());
 
                 }
             }
@@ -700,9 +701,9 @@ public class SingleConnection implements Runnable, AutoCloseable {
                     //download button and link
                     os.write("<a target=\"_blank\" href=\"".getBytes());
                     os.write(getFileUrl(f).getBytes());
-                    os.write("\"><img src=\"/wf_images/download.gif\" title=\"Download file (opens new tab)\" />".getBytes());
+                    os.write("\"><img src=\"/wf_images/download.gif\" title=\"Download file (opens new tab)\" /><span>".getBytes());
                     os.write(fname.getBytes());
-                    os.write("</a>".getBytes());
+                    os.write("</span></a>".getBytes());
 
                     printFileSize(os, f);
                     printModifiedTime(os, currentTime, f);
@@ -737,7 +738,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             timeString = String.valueOf(millis/1000/60/60) + " hours ago";
         else // multiple days
             timeString = String.valueOf(millis/1000/60/60/24) + " days ago";
-        os.write(("<span data-modified=\"" + millis + "\">").getBytes());
+        os.write(("<span class=\"info\" data-modified=\"" + millis + "\">").getBytes());
         os.write(timeString.getBytes());
         os.write("</span>".getBytes());
     }
@@ -750,7 +751,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
      * @throws IOException
      */
     private void printFileSize(BufferedOutputStream os, File f) throws IOException {
-        os.write(("<span data-size=\"" + String.valueOf(f.length()) + "\">").getBytes());
+        os.write(("<span class=\"info\" data-size=\"" + String.valueOf(f.length()) + "\">").getBytes());
         os.write(String.valueOf(f.length()).getBytes());
         os.write(" bytes</span>".getBytes());
     }

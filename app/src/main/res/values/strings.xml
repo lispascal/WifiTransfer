@@ -11,5 +11,6 @@
     <string name="button_rename">Renaming</string>
     <string name="allow">Allow:</string>
     <string name="button_deauth">Deauth users</string>
+    <string name="notification_service_name">NotificationService</string>
 
 </resources>
