@@ -168,14 +168,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "padding: 10px;" +
             "background-color: gray;" +
             "   }\n" +
-            "div.dir {border: 1px solid black;" +
-            "   background-color: orange;" +
-            "   }\n" +
-            "div.dir img {margin-left: 1px;" +
-            "   height:1em;width:1em;" +
-            "   cursor: pointer; " +
-            "   border: 1px solid black;" +
-            "   }" +
             "#bodyContainer {width: 100%;" +
             "   height: 100%;" +
             "   background-color: white" +
@@ -192,23 +184,37 @@ public class SingleConnection implements Runnable, AutoCloseable {
             "#directoryContainer {width:85%;" +
             "   padding: 4px;" +
             "   }\n" +
-            "div.file {border: 1px solid black;" +
+
+            // list sort styling
+            "div.list {border: 1px solid black;" +
             "   }\n" +
-            "div.file>form {display: inline;" +
+            "div.dir.list {background-color: orange;" +
             "   }\n" +
-            "div.file img {margin-left: 1px;" +
+            "div.list img, div.list input {margin-left: 1px;" +
             "   height:1em;width:1em;" +
             "   cursor: pointer; " +
             "   border: 1px solid black;" +
             "   }\n" +
-            "div.file input {margin-left: 1px;" +
-            "   height:1em;width:1em;" +
-            "   border: 1px solid black;" +
+            "div.file.list>form {display: inline;" +
             "   }\n" +
-            "div.file span.info {float:right;" +
+            "div.file.list span.info {float:right;" +
             "   width:15%;" +
             "   text-align:right" +
             "   }\n" +
+
+            "div.icon {width: 100px;" +
+            "   height:100px;" +
+            "   display:inline-block;" + // not supported in a very few browsers
+            "   background-image: url(\"wf_images/unknownIcon.gif\");" +
+            "   }\n" +
+            "div.icon.dir {background-image: url(\"wf_images/folderIcon.gif\");" +
+            "   }\n" +
+            "div.icon img, div.icon input, div.file.icon>form, div.file.icon span.info {" +
+            "   display: none;" +
+            "   }\n" +
+
+
+
             "#tableHead {" +
             "   cursor: pointer;" +
             "   border: 1px solid black" +
@@ -235,6 +241,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             + "<input type=\"file\" name=\"upfile\" />"
             + "<input type=\"submit\" value=\"Send\" />"
             + "</form>"
+            + "<button onclick=\"changeLayout()\">Change Layout</button>"
             + "</h1>";
     final String container_start = "<table id=\"contentContainer\"><tbody><tr>";
     final String navigation_start = "<td id=\"navigationContainer\">";
@@ -415,6 +422,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             os.write(css.getBytes());
             os.write(js.getBytes());
             os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.sortFunctions) + "</script>").getBytes());
+            os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.changeLayoutFunction) + "</script>").getBytes());
             os.write(header_end.getBytes());
             os.write(upload_form_start.getBytes());
             os.write(getUploadUrl(d).getBytes());
@@ -647,7 +655,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
             if(!d.getPath().equals(BASE_DIRECTORY)) // if not top directory, look in above directory.
             {
-                os.write("<div class=\"dir\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
+                os.write("<div class=\"dir list\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
                 os.write(getDirectoryUrl(d.getParentFile()).getBytes());
                 os.write("\" />".getBytes());
                 os.write("<span>Parent Folder</span>".getBytes());
@@ -662,7 +670,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
                 if(f.isDirectory()) // show each directory first
                 {
 
-                    os.write("<div class=\"dir\"><a href=\"".getBytes());
+                    os.write("<div class=\"dir list\"><a href=\"".getBytes());
 
                     os.write(getDirectoryUrl(f).getBytes());
                     os.write("\"><img src=\"/wf_images/openfolder.gif\"  title=\"Open Folder\" /><span>".getBytes());
@@ -683,7 +691,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 //                        fpath = fpath.replaceFirst(" ", "+");
 
                     String fname = f.getName();
-                    os.write(("<div class=\"file\" name=\"" + fname + "\">").getBytes());
+                    os.write(("<div class=\"file list\" name=\"" + fname + "\">").getBytes());
 
 
                     // rename button

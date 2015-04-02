@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="changeLayoutFunction">
+        function changeLayout() {
+            var list = document.getElementsByClassName(\"list\");
+            for(var i=list.length-1; i&gt;=0; --i) {
+                var oldClass = list[i].getAttribute(\"class\");
+                var newClass = oldClass.replace(\"list\", \"icon\");
+                list[i].setAttribute(\"class\", newClass);
+            }
+        }
+    </string>
     <string name="sortFunctions">
     var wasAscending = false;
     function sortByName() {

@@ -15,6 +15,8 @@
     * http://stackoverflow.com/questions/5416748/drag-a-file-from-browser-to-desktop
         * http://www.thecssninja.com/javascript/gmail-dragout
         * https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer
+* inline-block
+    * https://blog.mozilla.org/webdev/2009/02/20/cross-browser-inline-block/
 * xml special chars
     * http://stackoverflow.com/questions/1091945/what-characters-do-i-need-to-escape-in-xml-documents
 
