@@ -126,142 +126,26 @@ public class SingleConnection implements Runnable, AutoCloseable {
     }
 
 
-    final String js = "<script>" + "\n" +
-            "function rename(element, dir) {" + "\n" +
-            "   oldName = element.parentElement.getAttribute(\"name\");" + "\n" +
-//            "   oldName = oldName.substr(0, oldName.length);" + "\n" + // for some reason a space is at the end
-            "   var result = prompt(\"New File Name?\", oldName);" + "\n" +
-
-            // if they didn't hit cancel & name is different, create form then submit it
-            "   if(result != null && result != oldName)" +  "\n" +
-            "   {" + "\n" +
-            "       var form = document.createElement(\"form\");" + "\n" +
-            "       form.setAttribute(\"method\", \"POST\");" + "\n" +
-            // path
-            "       form.setAttribute(\"action\", \"rename.html?path=\" + dir);" + "\n" +
-            "       form.setAttribute(\"accept-charset\", \"UTF-8\");" + "\n" +
-            "       form.setAttribute(\"enctype\", \"multipart/form-data\");" + "\n" +
-
-    // first argument in post
-            "       var inp1 = document.createElement(\"input\");" + "\n" +
-            "       inp1.setAttribute(\"type\", \"hidden\");" + "\n" +
-            "       inp1.setAttribute(\"name\", \"oldName\");" + "\n" +
-            "       inp1.setAttribute(\"value\", oldName);" + "\n" +
-            "       form.appendChild(inp1);" + "\n" +
-            // second argument in post
-            "       var inp2 = document.createElement(\"input\");" + "\n" +
-            "       inp2.setAttribute(\"type\", \"hidden\");" + "\n" +
-            "       inp2.setAttribute(\"name\", \"newName\");" + "\n" +
-            "       inp2.setAttribute(\"value\", result);" + "\n" +
-            "       form.appendChild(inp2);" + "\n" +
-            // submit form
-            "       document.body.appendChild(form);" + "\n" +
-            "       form.submit();" +
-            "    }" + "\n" +
-            "}" + "\n" +
-            "</script>";
-
-    final String css = "<style type=\"text/css\">" +
-            "h1 {border-radius: 12px;" +
-            "background-clip: padding-box;" +
-            "width: 95%;" +
-            "padding: 10px;" +
-            "background-color: gray;" +
-            "   }\n" +
-            "#bodyContainer {width: 100%;" +
-            "   height: 100%;" +
-            "   background-color: white" +
-            "   }\n" +
-            "#contentContainer {width:95%;" +
-//            "   background-clip: padding-box;" +
-            "   }\n" +
-            "#navigationContainer {width:15%;" +
-            "   border-radius: 12px;" +
-            "   padding: 4px;" +
-            "   background-color: lightgray;" +
-            "   vertical-align: top;" +
-            "   }\n" +
-            "#directoryContainer {width:85%;" +
-            "   padding: 4px;" +
-            "   }\n" +
-
-            // list sort styling
-            "div.list {border: 1px solid black;" +
-            "   }\n" +
-            "div.dir.list {background-color: orange;" +
-            "   }\n" +
-            "div.list img, div.list input {margin-left: 1px;" +
-            "   height:1em;width:1em;" +
-            "   cursor: pointer; " +
-            "   border: 1px solid black;" +
-            "   }\n" +
-            "div.file.list>form {display: inline;" +
-            "   }\n" +
-            "div.file.list span.info {float:right;" +
-            "   width:15%;" +
-            "   text-align:right" +
-            "   }\n" +
-
-            "div.icon {width: 100px;" +
-            "   height:100px;" +
-            "   display:inline-block;" + // not supported in a very few browsers
-            "   background-image: url(\"wf_images/unknownIcon.gif\");" +
-            "   }\n" +
-            "div.icon.dir {background-image: url(\"wf_images/folderIcon.gif\");" +
-            "   }\n" +
-            "div.icon img, div.icon input, div.file.icon>form, div.file.icon span.info {" +
-            "   display: none;" +
-            "   }\n" +
 
 
+    /*
+    String header_start = new String(mainActivity.getString(R.string.header_start));
+    String header_end = mainActivity.getString(R.string.header_end);
+    String upload_form_start = mainActivity.getString(R.string.upload_form_start);
+    String upload_form_end = mainActivity.getString(R.string.upload_form_end);
+    String container_start = mainActivity.getString(R.string.container_start);
+    String navigation_start = mainActivity.getString(R.string.navigation_start);
+    String navigation_end = mainActivity.getString(R.string.navigation_end);
 
-            "#tableHead {" +
-            "   cursor: pointer;" +
-            "   border: 1px solid black" +
-            "   }\n" +
-            "#sortByNameSpan {" +
-            "   width: 70%" +
-            "   }\n" +
-            "#sortByDateSpan {" +
-            "   float:right;" +
-            "   width: 15%" +
-            "   }\n" +
-            "#sortBySizeSpan {" +
-            "   float:right;" +
-            "   width: 15%" +
-            "   }\n" +
-            "</style>\n";
+    String directory_start= mainActivity.getString(R.string.directory_start);
+    String table_head = mainActivity.getString(R.string.table_head);
+    String directory_end = mainActivity.getString(R.string.directory_end);
+    String container_end = mainActivity.getString(R.string.container_end);
 
-    final String header_start = "<html><head>";
-    final String header_end = "</head><body><div id=\"bodyContainer\">";
-    final String upload_form_start = "<h1>FileServer"
-            + "<form method=\"post\" action=\"";
-
-    final String upload_form_end = "\" enctype=\"multipart/form-data\">"
-            + "<input type=\"file\" name=\"upfile\" />"
-            + "<input type=\"submit\" value=\"Send\" />"
-            + "</form>"
-            + "<button onclick=\"changeLayout()\">Change Layout</button>"
-            + "</h1>";
-    final String container_start = "<table id=\"contentContainer\"><tbody><tr>";
-    final String navigation_start = "<td id=\"navigationContainer\">";
-    final String navigation_end = "</td>";
-
-    final String directory_start= "<td id=\"directoryContainer\">";
-    final String table_head = "<div id=\"tableHead\">"
-            + "<span id=\"sortByNameSpan\" onclick=\"sortByName()\">Name</span>"
-            + "<span id=\"sortBySizeSpan\" onclick=\"sortBySize()\">Size</span>"
-            + "<span id=\"sortByDateSpan\" onclick=\"sortByDate()\">Last Modified</span>"
-            + "</div>";
-    final String directory_end = "</td>";
-    final String container_end = "</tr></tbody></table></div></body></html>";
-
-    final String login_markup_start = "<form action=\"";
+    String login_markup_start = mainActivity.getString(R.string.login_markup_start);
     // insert url
-    final String login_markup_end = "\" enctype=\"multipart/form-data\" method=\"post\">" +
-            "Password: <input type=\"password\" name=password>" +
-            "<input type=\"submit\" value=\"Submit\"" +
-            "</form>";
+    String login_markup_end = mainActivity.getString(R.string.login_markup_end);
+    */
 
 
     final String BASE_DIRECTORY = "/storage/emulated/0";
@@ -396,17 +280,17 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
     private void serveLoginPage(File d, BufferedOutputStream os) {
         try {
-            os.write(header_start.getBytes());
+            os.write(getResource(R.string.header_start).getBytes());
             String title = "<title>Log in</title>\n";
             os.write(title.getBytes());
 //            os.write(css.getBytes());
 //            os.write(js.getBytes());
-            os.write(header_end.getBytes());
-            os.write(container_start.getBytes());
-            os.write(login_markup_start.getBytes());
+            os.write(getResource(R.string.header_end).getBytes());
+            os.write(getResource(R.string.container_start).getBytes());
+            os.write(getResource(R.string.login_markup_start).getBytes());
             os.write(getLoginUrl(d).getBytes());
-            os.write(login_markup_end.getBytes());
-            os.write(container_end.getBytes());
+            os.write(getResource(R.string.login_markup_end).getBytes());
+            os.write(getResource(R.string.container_end).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -414,28 +298,45 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
     }
 
+    private String getResource(int id) {
+        return mainActivity.getAppContext().getResources().getString(id);
+    }
+
     private void servePage(File d, BufferedOutputStream os) {
         try {
-            os.write(header_start.getBytes());
+//            os.write(header_start.getBytes());
+            os.write(getResource(R.string.header_start).getBytes());
             String title = "<title>" + d.getPath() + "</title>\n";
             os.write(title.getBytes());
-            os.write(css.getBytes());
-            os.write(js.getBytes());
+//            os.write(css.getBytes());
+            os.write(mainActivity.getAppContext().getResources().getString(R.string.mainCss).getBytes());
+            os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.renameFunction) + "</script>").getBytes());
             os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.sortFunctions) + "</script>").getBytes());
             os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.changeLayoutFunction) + "</script>").getBytes());
-            os.write(header_end.getBytes());
-            os.write(upload_form_start.getBytes());
+//os.write(header_end.getBytes());
+            os.write(getResource(R.string.header_end).getBytes());
+            //os.write(upload_form_start.getBytes());
+            os.write(getResource(R.string.upload_form_start).getBytes());
+
             os.write(getUploadUrl(d).getBytes());
-            os.write(upload_form_end.getBytes());
-            os.write(container_start.getBytes());
-            os.write(navigation_start.getBytes());
+            //os.write(upload_form_end.getBytes());
+            os.write(getResource(R.string.upload_form_end).getBytes());
+            //os.write(container_start.getBytes());
+            os.write(getResource(R.string.container_start).getBytes());
+            //os.write(navigation_start.getBytes());
+            os.write(getResource(R.string.navigation_start).getBytes());
             displayNavigationTree(d, os);
-            os.write(navigation_end.getBytes());
-            os.write(directory_start.getBytes());
-            os.write(table_head.getBytes());
+            //os.write(navigation_end.getBytes());
+            os.write(getResource(R.string.navigation_end).getBytes());
+            //os.write(directory_start.getBytes());
+            os.write(getResource(R.string.directory_start).getBytes());
+            //os.write(table_head.getBytes());
+            os.write(getResource(R.string.table_head).getBytes());
             displayFolder(d, os);
-            os.write(directory_end.getBytes());
-            os.write(container_end.getBytes());
+            //os.write(directory_end.getBytes());
+            os.write(getResource(R.string.directory_end).getBytes());
+            //os.write(container_end.getBytes());
+            os.write(getResource(R.string.container_end).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="renameFunction">
+            function rename(element, dir) {\n
+               oldName = element.parentElement.getAttribute(\"name\");
+               var result = prompt(\"New File Name?\", oldName);
+
+            // if they didn\'t hit cancel and name is different, create form then submit it\n
+               if(result != null &amp;&amp; result != oldName)
+               {
+                   var form = document.createElement(\"form\");
+                   form.setAttribute(\"method\", \"POST\");
+            // path\n
+                   form.setAttribute(\"action\", \"rename.html?path=\" + dir);
+                   form.setAttribute(\"accept-charset\", \"UTF-8\");
+                   form.setAttribute(\"enctype\", \"multipart/form-data\");
+
+            // first argument in post\n
+                   var inp1 = document.createElement(\"input\");
+                   inp1.setAttribute(\"type\", \"hidden\");
+                   inp1.setAttribute(\"name\", \"oldName\");
+                   inp1.setAttribute(\"value\", oldName);
+                   form.appendChild(inp1);
+            // second argument in post\n
+                   var inp2 = document.createElement(\"input\");
+                   inp2.setAttribute(\"type\", \"hidden\");
+                   inp2.setAttribute(\"name\", \"newName\");
+                   inp2.setAttribute(\"value\", result);
+                   form.appendChild(inp2);
+            // submit form\n
+                   document.body.appendChild(form);
+                   form.submit();
+                }\n
+            }\n
+    </string>
     <string name="changeLayoutFunction">
         function changeLayout() {
             var list = document.getElementsByClassName(\"list\");
