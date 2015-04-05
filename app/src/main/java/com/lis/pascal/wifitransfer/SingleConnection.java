@@ -240,6 +240,12 @@ public class SingleConnection implements Runnable, AutoCloseable {
             uriEnd = uriEnd.replace("%20", " ");
             sendOk(conn, hr);
             serveAsset(uriEnd, os);
+        } else if (uri.contains("wf_resources/")) // if a website image
+        {
+            String uriEnd = uri.substring(uri.lastIndexOf('/') + 1);
+            uriEnd = uriEnd.replace("%20", " ");
+            sendOk(conn, hr);
+            serveAsset(uriEnd, os);
         } else if (uri.contains("/download/")) // download file at url
         {
             String fileName = uriObj.getQueryParameter("file");
@@ -308,34 +314,22 @@ public class SingleConnection implements Runnable, AutoCloseable {
             os.write(getResource(R.string.header_start).getBytes());
             String title = "<title>" + d.getPath() + "</title>\n";
             os.write(title.getBytes());
-//            os.write(css.getBytes());
-            os.write(mainActivity.getAppContext().getResources().getString(R.string.mainCss).getBytes());
-            os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.renameFunction) + "</script>").getBytes());
-            os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.sortFunctions) + "</script>").getBytes());
-            os.write(("<script>" + mainActivity.getAppContext().getResources().getString(R.string.changeLayoutFunction) + "</script>").getBytes());
-//os.write(header_end.getBytes());
+//            os.write(mainActivity.getAppContext().getResources().getString(R.string.mainCss).getBytes());
+            os.write("<link rel=\"stylesheet\" type=\"text/css\" href=\"/wf_resources/style.css\">".getBytes());
+            os.write("<script src=\"/wf_resources/script.js\"></script>".getBytes());
             os.write(getResource(R.string.header_end).getBytes());
-            //os.write(upload_form_start.getBytes());
             os.write(getResource(R.string.upload_form_start).getBytes());
 
             os.write(getUploadUrl(d).getBytes());
-            //os.write(upload_form_end.getBytes());
             os.write(getResource(R.string.upload_form_end).getBytes());
-            //os.write(container_start.getBytes());
             os.write(getResource(R.string.container_start).getBytes());
-            //os.write(navigation_start.getBytes());
             os.write(getResource(R.string.navigation_start).getBytes());
             displayNavigationTree(d, os);
-            //os.write(navigation_end.getBytes());
             os.write(getResource(R.string.navigation_end).getBytes());
-            //os.write(directory_start.getBytes());
             os.write(getResource(R.string.directory_start).getBytes());
-            //os.write(table_head.getBytes());
             os.write(getResource(R.string.table_head).getBytes());
             displayFolder(d, os);
-            //os.write(directory_end.getBytes());
             os.write(getResource(R.string.directory_end).getBytes());
-            //os.write(container_end.getBytes());
             os.write(getResource(R.string.container_end).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
@@ -471,7 +465,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
      * @param output Stream to which the file will be written.
      */
     private void serveAsset(String fileName, BufferedOutputStream output) {
-        fileName = fileName.replace("%20", " ");
+//        fileName = fileName.replace("%20", " ");
         BufferedInputStream fis;
         try {
             fis = new BufferedInputStream(mainActivity.getAssets().open(fileName));
