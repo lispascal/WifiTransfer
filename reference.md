@@ -22,3 +22,5 @@
 
 * Header Fields
     * http://en.wikipedia.org/wiki/List_of_HTTP_header_fields
+* color scheme
+    * http://paletton.com/#uid=63Y0v0klemc5iBOaLtUuRf9Jn8g

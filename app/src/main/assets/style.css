@@ -1,14 +1,18 @@
+body {
+    background-color: #35387B;
+}
+
 h1 {
     border-radius: 12px;
     background-clip: padding-box;
     width: 95%;
     padding: 10px;
-    background-color: gray;
+    background-color: #2A5671;
 }
 #bodyContainer {
     width: 100%;
     height: 100%;
-    background-color: white
+    background-color: #35387B;
 }
 #contentContainer {
     width:95%;
@@ -18,7 +22,7 @@ h1 {
     width:15%;
     border-radius: 12px;
     padding: 4px;
-    background-color: lightgray;
+    background-color: #8570A2;
     vertical-align: top;
 }
 #directoryContainer {
@@ -28,10 +32,11 @@ h1 {
 
 /* list sort styling */
 div.list {
-    border: 1px solid black
+    border: 1px solid black;
+    background-color: #EED99E;
 }
 div.dir.list {
-    background-color: orange;
+    background-color: #B1923C;
 }
 div.list img, div.list input {
     margin-left: 1px;
@@ -65,7 +70,8 @@ div.icon img, div.icon input, div.file.icon>form, div.file.icon span.info {
 
 #tableHead {
     cursor: pointer;
-    border: 1px solid black
+    border: 1px solid black;
+    background-color: #FFF4D5;
 }
 #sortByNameSpan {
     width: 70%
