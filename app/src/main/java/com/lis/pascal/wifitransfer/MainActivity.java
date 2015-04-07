@@ -2,6 +2,7 @@ package com.lis.pascal.wifitransfer;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.Map;
 
 
@@ -23,10 +25,28 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        acceptor = new ConnectionAcceptor(this);
-        new Thread(acceptor).start();
+        if(makeWifiTransferDir()) { // only if default folder exists.
+            acceptor = new ConnectionAcceptor(this);
+            new Thread(acceptor).start();
+        }
     }
 
+    /**
+     * Makes directory for this app
+     * @return True if successful or it already exists. False if unsuccessful, external storage
+     * cannot be mounted, or it does not exist and could not be made.
+     */
+    private boolean makeWifiTransferDir() {
+        if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            System.out.println("Can't open external storage");
+            return false;
+        }
+
+        File mainFolder = new File(Environment.getExternalStorageDirectory(), "WifiTransfer");
+        if(!(mainFolder.exists() && mainFolder.isDirectory())) // if doesn't exist, create it.
+            return mainFolder.mkdir(); //  if fail to make, return false
+        return true;
+    }
 
 
     Context getAppContext(){

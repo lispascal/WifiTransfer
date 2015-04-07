@@ -149,6 +149,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
 
     final String BASE_DIRECTORY = "/storage/emulated/0";
+    final String DEFAULT_DIRECTORY = "/storage/emulated/0/WifiTransfer";
 
     private void processRequest(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
 
@@ -162,7 +163,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         if(uriObj.getQueryParameter("path") != null)
             dir.append(uriObj.getQueryParameter("path"));
         else
-            dir.append(BASE_DIRECTORY);
+            dir.append(DEFAULT_DIRECTORY);
 
         System.out.println("dir preproc = " + dir);
 
@@ -181,13 +182,13 @@ public class SingleConnection implements Runnable, AutoCloseable {
         dirFile = new File(dir.toString()); // convert spaces appropriately
         if(!dirFile.exists() || !dirFile.isDirectory()) // catch issues in the directory path
         {
-            dir.replace(0,dir.length(), BASE_DIRECTORY); // replace it with BASE_DIRECTORY if invalid
+            dir.replace(0,dir.length(), DEFAULT_DIRECTORY); // replace it with DEFAULT_DIRECTORY if invalid
             dirFile = new File(dir.toString());
         }
         System.out.println("directory = " + dirFile.getAbsolutePath());
 
-        // when not auth and dir != base, serve login page instead
-        if(!auth && !dirFile.getAbsolutePath().contentEquals(BASE_DIRECTORY) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
+        // when not auth and dir != default, serve login page instead
+        if(!auth && !dirFile.getAbsolutePath().contentEquals(DEFAULT_DIRECTORY) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
         {
             sendOk(conn, hr);
             serveLoginPage(dirFile, os);
