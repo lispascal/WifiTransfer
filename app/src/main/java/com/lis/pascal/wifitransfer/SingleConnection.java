@@ -148,8 +148,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
     */
 
 
-    final String BASE_DIRECTORY = "/storage/emulated/0";
-    final String DEFAULT_DIRECTORY = "/storage/emulated/0/WifiTransfer";
+    String baseDirectory;
+    String defaultDirectory;
 
     private void processRequest(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
 
@@ -159,20 +159,26 @@ public class SingleConnection implements Runnable, AutoCloseable {
         System.out.println("uri: " + uriObj.getPath());
         String uri = uriObj.getPath();
 
-        StringBuilder dir = new StringBuilder();
-        if(uriObj.getQueryParameter("path") != null)
-            dir.append(uriObj.getQueryParameter("path"));
-        else
-            dir.append(DEFAULT_DIRECTORY);
-
-        System.out.println("dir preproc = " + dir);
-
+        // check external storage, and set some useful strings
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             System.out.println("Can't open external storage");
             return;
         }
-
         File exStorage = Environment.getExternalStorageDirectory();
+        baseDirectory = exStorage.getPath();
+        defaultDirectory = baseDirectory + "/WifiTransfer";
+
+
+        StringBuilder dir = new StringBuilder();
+        if(uriObj.getQueryParameter("path") != null)
+            dir.append(uriObj.getQueryParameter("path"));
+        else
+            dir.append(defaultDirectory);
+
+        System.out.println("dir preproc = " + dir);
+
+
+
         if (!dir.toString().contains(exStorage.getPath()))
             dir.insert(0, exStorage.getPath());
 
@@ -182,13 +188,13 @@ public class SingleConnection implements Runnable, AutoCloseable {
         dirFile = new File(dir.toString()); // convert spaces appropriately
         if(!dirFile.exists() || !dirFile.isDirectory()) // catch issues in the directory path
         {
-            dir.replace(0,dir.length(), DEFAULT_DIRECTORY); // replace it with DEFAULT_DIRECTORY if invalid
+            dir.replace(0,dir.length(), defaultDirectory); // replace it with defaultDirectory if invalid
             dirFile = new File(dir.toString());
         }
         System.out.println("directory = " + dirFile.getAbsolutePath());
 
         // when not auth and dir != default, serve login page instead
-        if(!auth && !dirFile.getAbsolutePath().contentEquals(DEFAULT_DIRECTORY) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
+        if(!auth && !dirFile.getAbsolutePath().contentEquals(defaultDirectory) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
         {
             sendOk(conn, hr);
             serveLoginPage(dirFile, os);
@@ -549,7 +555,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
             System.out.println(d.exists());
 //                first, if not in top directory, put a link for it.
 
-            if(!d.getPath().equals(BASE_DIRECTORY)) // if not top directory, look in above directory.
+            if(!d.getPath().equals(baseDirectory)) // if not top directory, look in above directory.
             {
                 os.write("<div class=\"dir list\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
                 os.write(getDirectoryUrl(d.getParentFile()).getBytes());
@@ -694,7 +700,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
         list.add(new File(curr.getPath()));
 
-        while(curr != null && !curr.getPath().contentEquals(BASE_DIRECTORY))
+        while(curr != null && !curr.getPath().contentEquals(baseDirectory))
         {
             curr = curr.getParentFile();
             list.add(new File(curr.getPath()));
