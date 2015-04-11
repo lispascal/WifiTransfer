@@ -30,13 +30,16 @@ function rename(element, dir) {
     }
 }
 
+var layout = "list";
 function changeLayout() {
-    var list = document.getElementsByClassName("list");
+	var newLayout = (layout=="list") ? "icon" : "list";
+    var list = document.getElementsByClassName(layout);
     for(var i = list.length-1; i>=0; --i) {
         var oldClass = list[i].getAttribute("class");
-        var newClass = oldClass.replace("list", "icon");
+        var newClass = oldClass.replace(layout, newLayout);
         list[i].setAttribute("class", newClass);
     }
+    layout = newLayout;
 }
 
 var wasAscending = false;
