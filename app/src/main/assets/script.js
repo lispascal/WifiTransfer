@@ -42,6 +42,35 @@ function changeLayout() {
     layout = newLayout;
 }
 
+
+function removeOldPopup() {
+	var div = document.getElementById("iconPopup");
+	if(div)
+		div.remove();
+}
+
+function popupStuff(x, y, target) {
+	var div = document.createElement("div");
+	div.id = "iconPopup";
+	for(var i = 0; i < 3; i++)
+		div.appendChild(target.children[i].cloneNode(true));
+	div.style.top = y;
+	div.style.left = x;
+	div.setAttribute("name", target.getAttribute("name"));
+	document.body.appendChild(div);
+}
+
+document.addEventListener('contextmenu', function(e) {
+	console.log(e);
+	removeOldPopup();
+	if(e.target.hasAttribute("class") && e.target.getAttribute("class").indexOf("icon") >= 0 && e.target.getAttribute("class").indexOf("file") >= 0) // right clicked an icon
+	{
+		console.log("inner part!");
+		popupStuff(e.pageX, e.pageY, e.target);
+		e.preventDefault();
+	}
+}, false);
+
 var wasAscending = false;
 function sortByName() {
     var objList = [];
