@@ -32,6 +32,8 @@ function rename(element, dir) {
 
 var layout = "list";
 function changeLayout() {
+	removeOldPopup(); // if changing layout remove old iconPopup. saves a check
+
 	var newLayout = (layout=="list") ? "icon" : "list";
     var list = document.getElementsByClassName(layout);
     for(var i = list.length-1; i>=0; --i) {
