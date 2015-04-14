@@ -65,6 +65,21 @@ div.icon {
 div.icon.dir {
     background-image: url("wf_images/folderIcon.gif");
 }
+div.icon.file[name$=".jpg"],
+div.icon.file[name$=".jpeg"],
+div.icon.file[name$=".png"],
+div.icon.file[name$=".bmp"],
+div.icon.file[name$=".gif"] {
+	background-image: url("wf_images/imageIcon.png");
+}
+div.icon.file[name$=".txt"],
+div.icon.file[name$=".log"] {
+	background-image: url("wf_images/textIcon.png");
+}
+div.icon.file[name$=".docx"],
+div.icon.file[name$=".doc"] {
+	background-image: url("wf_images/docIcon.png");
+}
 div.icon img, div.icon input, div.file.icon>form, div.file.icon span.info {
     display: none;
 }
