@@ -65,6 +65,8 @@ div.icon {
 div.icon.dir {
     background-image: url("wf_images/folderIcon.gif");
 }
+/* Format-specific icon images */
+/* Images */
 div.icon.file[name$=".jpg"],
 div.icon.file[name$=".jpeg"],
 div.icon.file[name$=".png"],
@@ -72,14 +74,57 @@ div.icon.file[name$=".bmp"],
 div.icon.file[name$=".gif"] {
 	background-image: url("wf_images/imageIcon.png");
 }
+/* text files */
 div.icon.file[name$=".txt"],
 div.icon.file[name$=".log"] {
-	background-image: url("wf_images/textIcon.png");
+    background-image: url("wf_images/textIcon.png");
 }
+/* web files */
+div.icon.file[name$=".html"],
+div.icon.file[name$=".css"],
+div.icon.file[name$=".php"] {
+    background-image: url("wf_images/textIcon.png");
+}
+/* word documents */
 div.icon.file[name$=".docx"],
-div.icon.file[name$=".doc"] {
+div.icon.file[name$=".doc"],
+div.icon.file[name$=".pdf"] {
 	background-image: url("wf_images/docIcon.png");
 }
+/* books */
+div.icon.file[name$=".epub"],
+div.icon.file[name$=".mobi"],
+div.icon.file[name$=".pdb"],
+div.icon.file[name$=".ibooks"],
+div.icon.file[name$=".lit"],
+div.icon.file[name$=".rtf"] {
+    background-image: url("wf_images/bookIcon.png");
+}
+/* audio */
+div.icon.file[name$=".au"],
+div.icon.file[name$=".wav"],
+div.icon.file[name$=".mp3"],
+div.icon.file[name$=".tta"],
+div.icon.file[name$=".flac"] {
+    background-image: url("wf_images/audioIcon.png");
+}
+/* video */
+div.icon.file[name$=".mp4"],
+div.icon.file[name$=".avi"],
+div.icon.file[name$=".mkv"],
+div.icon.file[name$=".wmv"],
+div.icon.file[name$=".m4v"],
+div.icon.file[name$=".webm"] {
+    background-image: url("wf_images/videoIcon.png");
+}
+/* executable */
+div.icon.file[name$=".exe"],
+div.icon.file[name$=".bat"],
+div.icon.file[name$=".sh"] {
+    background-image: url("wf_images/exeIcon.png");
+}
+
+
 div.icon img, div.icon input, div.file.icon>form, div.file.icon span.info {
     display: none;
 }
