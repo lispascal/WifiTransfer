@@ -18,6 +18,7 @@ import android.preference.RingtonePreference;
 import android.text.TextUtils;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,6 +47,11 @@ public class SettingsActivity extends PreferenceActivity {
         super.onPostCreate(savedInstanceState);
 
         setupSimplePreferencesScreen();
+    }
+
+    // see note on fragments variable
+    protected boolean isValidFragment(String fragName) {
+        return fragments.contains(fragName);
     }
 
     /**
@@ -118,11 +124,21 @@ public class SettingsActivity extends PreferenceActivity {
     /**
      * {@inheritDoc}
      */
+
+    // all operations on this from here: http://stackoverflow.com/a/28068752
+    // used to resolve "Subclasses of PreferenceActivity must override isValidFragment(String)"
+    private static List<String> fragments = new ArrayList<String>();
+
+
     @Override
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void onBuildHeaders(List<Header> target) {
         if (!isSimplePreferences(this)) {
             loadHeadersFromResource(R.xml.pref_headers, target);
+            fragments.clear();
+            for(Header header : target) {
+                fragments.add(header.fragment);
+            }
         }
     }
 
@@ -214,8 +230,8 @@ public class SettingsActivity extends PreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
-            bindPreferenceSummaryToValue(findPreference("example_list"));
+//            bindPreferenceSummaryToValue(findPreference("example_text"));
+//            bindPreferenceSummaryToValue(findPreference("example_list"));
         }
     }
 
@@ -223,6 +239,7 @@ public class SettingsActivity extends PreferenceActivity {
      * This fragment shows notification preferences only. It is used when the
      * activity is showing a two-pane settings UI.
      */
+    /*
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class NotificationPreferenceFragment extends PreferenceFragment {
         @Override
@@ -237,11 +254,13 @@ public class SettingsActivity extends PreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
         }
     }
+    */
 
     /**
      * This fragment shows data and sync preferences only. It is used when the
      * activity is showing a two-pane settings UI.
      */
+    /*
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class DataSyncPreferenceFragment extends PreferenceFragment {
         @Override
@@ -256,4 +275,5 @@ public class SettingsActivity extends PreferenceActivity {
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
         }
     }
+    */
 }
