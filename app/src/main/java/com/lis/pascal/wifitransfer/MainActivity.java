@@ -2,6 +2,7 @@ package com.lis.pascal.wifitransfer;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
@@ -10,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import java.io.File;
@@ -19,16 +21,32 @@ import java.util.Map;
 public class MainActivity extends ActionBarActivity {
 
     ConnectionAcceptor acceptor;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        SharedPreferences pref = getPreferences(MODE_PRIVATE);
+
+        ((CheckBox)findViewById(R.id.checkbox_download)).setChecked(pref.getBoolean("download", true));
+        ((CheckBox)findViewById(R.id.checkbox_upload)).setChecked(pref.getBoolean("upload", true));
+        ((CheckBox)findViewById(R.id.checkbox_rename)).setChecked(pref.getBoolean("rename", false));
+        ((CheckBox)findViewById(R.id.checkbox_deletion)).setChecked(pref.getBoolean("delete", false));
+        ((CheckBox)findViewById(R.id.checkbox_toasts)).setChecked(pref.getBoolean("toasts", true));
+
+
         if(makeWifiTransferDir()) { // only if default folder exists.
             acceptor = new ConnectionAcceptor(this);
             new Thread(acceptor).start();
         }
+    }
+
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+
+
     }
 
     /**
@@ -79,6 +97,30 @@ public class MainActivity extends ActionBarActivity {
         return true;
     }
 
+    @Override
+    public void onSaveInstanceState (Bundle outState) {
+        outState.putBoolean("download", ((CheckBox)findViewById(R.id.checkbox_download)).isChecked());
+        outState.putBoolean("upload", ((CheckBox)findViewById(R.id.checkbox_upload)).isChecked());
+        outState.putBoolean("rename", ((CheckBox)findViewById(R.id.checkbox_rename)).isChecked());
+        outState.putBoolean("delete", ((CheckBox)findViewById(R.id.checkbox_deletion)).isChecked());
+        outState.putBoolean("toasts", ((CheckBox)findViewById(R.id.checkbox_toasts)).isChecked());
+        super.onSaveInstanceState(outState);
+    }
+
+    protected void onPause() {
+        super.onPause();
+
+        SharedPreferences pref = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.putBoolean("download", ((CheckBox)findViewById(R.id.checkbox_download)).isChecked());
+        editor.putBoolean("upload", ((CheckBox)findViewById(R.id.checkbox_upload)).isChecked());
+        editor.putBoolean("rename", ((CheckBox)findViewById(R.id.checkbox_rename)).isChecked());
+        editor.putBoolean("delete", ((CheckBox)findViewById(R.id.checkbox_deletion)).isChecked());
+        editor.putBoolean("toasts", ((CheckBox)findViewById(R.id.checkbox_toasts)).isChecked());
+        editor.commit();
+
+    }
     protected void onStop() {
         super.onStop();
     }
