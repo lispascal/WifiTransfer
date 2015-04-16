@@ -60,10 +60,10 @@ div.icon {
     margin: 4px 4px 0 0;
     padding: 5px;
     float: left;
-    background-image: url("wf_images/unknownIcon.gif");
+    background-image: url("wf_images/unknownIcon.png");
 }
 div.icon.dir {
-    background-image: url("wf_images/folderIcon.gif");
+    background-image: url("wf_images/folderIcon.png");
 }
 /* Format-specific icon images */
 /* Images */
@@ -83,7 +83,7 @@ div.icon.file[name$=".log"] {
 div.icon.file[name$=".html"],
 div.icon.file[name$=".css"],
 div.icon.file[name$=".php"] {
-    background-image: url("wf_images/textIcon.png");
+    background-image: url("wf_images/htmlIcon.png");
 }
 /* word documents */
 div.icon.file[name$=".docx"],

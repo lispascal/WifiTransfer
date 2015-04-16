@@ -50,10 +50,7 @@ public class ConnectionAcceptor implements Runnable {
     }
     synchronized boolean getAuth(InetAddress addr)
     {
-        if(hsP.contains(addr))
-            return true;
-        else
-            return false;
+        return hsP.contains(addr);
     }
     synchronized void removeAllAuth()
     {
@@ -115,7 +112,7 @@ public class ConnectionAcceptor implements Runnable {
                 Socket s = ssock.accept();
                 System.out.println("sendbuffersize:" + s.getSendBufferSize());
                 System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
-                SingleConnection serv = new SingleConnection(mainActivity, this, s, ipstr, getAuth(s.getInetAddress()));
+                SingleConnection serv = new SingleConnection(mainActivity, this, s, getAuth(s.getInetAddress()));
                 addConn(serv);
                 new Thread(serv).start();
 

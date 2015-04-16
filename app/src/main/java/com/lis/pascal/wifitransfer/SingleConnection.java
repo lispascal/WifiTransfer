@@ -30,29 +30,32 @@ import java.util.Map;
 /**
 * Created by lispascal on 2/15/2015.
 */
-public class SingleConnection implements Runnable, AutoCloseable {
+public class SingleConnection implements Runnable {
 
-    private MainActivity mainActivity;
-    private ConnectionAcceptor parent;
-    Socket sock;
-    String url; // in case Absolute URL is needed
+    final private MainActivity mainActivity;
+    final private ConnectionAcceptor parent;
+    final Socket sock;
     private boolean auth;
 
-    SingleConnection(MainActivity mainActivity, ConnectionAcceptor connectionAcceptor, Socket s, String ipstr, boolean authorized) {
+    SingleConnection(MainActivity mainActivity, ConnectionAcceptor connectionAcceptor, Socket s, boolean authorized) {
         this.mainActivity = mainActivity;
         parent = connectionAcceptor;
         sock = s;
-        url = ipstr;
         auth = authorized;
     }
 
-    @Override
+//    @Override
     public void close() throws Exception {
         sock.shutdownInput();
         sock.shutdownOutput();
         sock.close();
     }
 
+
+    /**
+     * Class that holds parameters from POST method: the boundary string, the length, and whether
+     * POST was even received (isPost).
+     */
     private class PostInfo{
         boolean isPost = false;
         String boundary = "";
@@ -94,9 +97,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
             System.out.println("\nHeaders Done");
 
-//                InputStream isS = sock.getInputStream();
-//                while(isS.available() > 0)
-//                    System.out.print(isS.read());
             HttpEntity he = container.getEntity();
 
             final int READ_BUFFER_SIZE = 512*1024; // 0.5 MB
@@ -148,8 +148,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
     */
 
 
-    String baseDirectory;
-    String defaultDirectory;
+    private String baseDirectory;
+    private String defaultDirectory;
 
     private void processRequest(BufferedInputStream is, BufferedOutputStream os, DefaultHttpServerConnection conn, PostInfo pi, HttpRequest hr) throws IOException {
 
@@ -370,7 +370,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
 
     }
-    private void fileRename(File d, BufferedInputStream is, PostInfo pi) throws IOException {
+    private void fileRename(File d, BufferedInputStream is, PostInfo pi) {
         HashMap<String, String> hm = getArgs(is, pi);
         if (hm == null) {
             System.out.println("rename failed");
@@ -514,7 +514,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
         if(desiredFile.canRead()) // serve it
         {
             sendFileDownloadHeader(conn, request, desiredFile);
-            BufferedInputStream fis = null;
+            BufferedInputStream fis;
             System.out.println("file exists");
             try {
                 fis = new BufferedInputStream(new FileInputStream(desiredFile), 100000);
@@ -587,11 +587,6 @@ public class SingleConnection implements Runnable, AutoCloseable {
             {
                 if(!f.isDirectory()) // then show each non-directory file, and its size
                 {
-//                    String fpath = f.toURI().getPath();
-////                                System.out.println(fpath);
-//                    while(fpath.indexOf(' ') < fpath.lastIndexOf('/') && fpath.indexOf(' ') != -1) // replace all spaces in directory, but not in files
-//                        fpath = fpath.replaceFirst(" ", "+");
-
                     String fname = f.getName();
                     os.write(("<div class=\"file list\" name=\"" + fname + "\">").getBytes());
 
@@ -654,7 +649,7 @@ public class SingleConnection implements Runnable, AutoCloseable {
     }
 
     /**
-     * Prints size of a file to the outputstream as an HTML <span> element.
+     * Prints size of a file to the OutputStream as an HTML <span> element.
      * Sets the data-size attribute to the bytesize for sorting use.
      * @param os BufferedOutputStream to print to
      * @param f file of which to get the size
@@ -666,25 +661,21 @@ public class SingleConnection implements Runnable, AutoCloseable {
         os.write(" bytes</span>".getBytes());
     }
 
+
     private String getLoginUrl(File dir) {
-        String fp = "/login.html?path=" + Uri.encode(dir.getPath() + "/");
-        return fp;
+        return "/login.html?path=" + Uri.encode(dir.getPath() + "/");
     }
     private String getDirectoryUrl(File dir) {
-        String fp = "/index.html?path=" + Uri.encode(dir.getPath() + "/");
-        return fp;
+        return "/index.html?path=" + Uri.encode(dir.getPath() + "/");
     }
     private String getUploadUrl(File dir) {
-        String fp = "/upload.html?path=" + Uri.encode(dir.getPath() + "/");
-        return fp;
+        return "/upload.html?path=" + Uri.encode(dir.getPath() + "/");
     }
     private String getDeleteUrl(File dir) {
-        String fp = "/delete.html?path=" + Uri.encode(dir.getParent() + "/") + "&file=" + Uri.encode(dir.getName());
-        return fp;
+        return "/delete.html?path=" + Uri.encode(dir.getParent() + "/") + "&file=" + Uri.encode(dir.getName());
     }
     private String getFileUrl(File f) {
-        String fp = "/download/" + Uri.encode(f.getName()) + "?path=" + Uri.encode(f.getParent() + "/") + "&file=" + Uri.encode(f.getName());
-        return fp;
+        return "/download/" + Uri.encode(f.getName()) + "?path=" + Uri.encode(f.getParent() + "/") + "&file=" + Uri.encode(f.getName());
     }
 
 
@@ -720,6 +711,13 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
     }
 
+    /**
+     * Receives the file the user is uploading to this device.
+     * @param pi The information about this transfer.
+     * @param is The stream from which the file is being received
+     * @param dir Directory to which the file should be written.
+     * @throws IOException
+     */
     private void fileUpload(PostInfo pi, BufferedInputStream is, File dir) throws IOException {
         BufferedOutputStream fs = null;
         String fileName = "";
@@ -731,21 +729,17 @@ public class SingleConnection implements Runnable, AutoCloseable {
         }
 
 
-        int x = 0;
-
+        int x;
         boolean fileCopying = false;
         boolean endOfLine = false;
-
         int newLines = 0;
-
         final int LIMIT = 1460 * 10; // usual max packet size for tcp over ip, times 10
         byte[] xArr = new byte[LIMIT];
-
         char[] lineArr = new char[LIMIT];
         int pos = 0;
         System.out.println(pi.length);
         int bytesProcessed = 0;
-        int bytesAdded = 0;
+        int bytesAdded;
         int prevInArray = 0;
         while(bytesProcessed < pi.length)
         {
@@ -757,13 +751,8 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
                 lineArr[pos++] = (char) x;
 
-                if(x == '\n')
+                if(x == '\n' || pos == LIMIT)
                     endOfLine = true;
-                else
-                {
-                    if(pos == LIMIT) // make sure we dont keep adding to charArr
-                        endOfLine = true;
-                }
 
                 if(endOfLine) // if not copying yet, look for file name.
                 {
@@ -812,9 +801,9 @@ public class SingleConnection implements Runnable, AutoCloseable {
 
                 if(xStr.contains(pi.boundary)) // if boundary found, write everything before last newline prior to boundary
                 {
-                    // gets spot of last newline. if browser is from windows, httprequest might have carriage return
-                    // not sure if other OSes will though. Kind of dangerous, but remove last char if it is carriage return
-                    // safer fix might be to check the client's OS via User-Agent header and condition behavior on that
+                    // Gets spot of last newline. if browser is from windows, httpRequest might have carriage return at the end.
+                    // Not sure if other OSes will though. Kind of dangerous, but remove last char if it is a carriage return.
+                    // Safer fix might be to check the client's OS via User-Agent header and condition behavior on that.
                     int boundaryIndex = xStr.indexOf(pi.boundary);
                     int endIndex = xStr.substring(0, boundaryIndex)
                                    .lastIndexOf('\n'); // gets position of last newline before the boundary.
