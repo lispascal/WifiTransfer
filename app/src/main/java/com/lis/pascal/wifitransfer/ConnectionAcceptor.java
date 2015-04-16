@@ -85,8 +85,13 @@ public class ConnectionAcceptor implements Runnable {
         WifiManager wm = (WifiManager) mainActivity.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wi = wm.getConnectionInfo();
         int ip = wi.getIpAddress();
-        final String ipstr = (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff)
+        final String ipstr;
+        System.out.println(ip);
+        if(ip != 0x00000000)
+            ipstr = (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff)
                 + "." + ((ip >> 24) & 0xff) + ":" + ssock.getLocalPort();
+        else
+            ipstr = "Relaunch with WiFi";
 
 
         // changes the ip address shown in the app

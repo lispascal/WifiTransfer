@@ -7,6 +7,8 @@
     * https://developer.android.com/training/scheduling/wakelock.html
 * settings activity
     * http://developer.android.com/guide/topics/ui/settings.html
+* state persistence
+    * http://stackoverflow.com/a/3584836
 * better http
     * http://developer.android.com/reference/java/net/URL.html#openConnection()
 
