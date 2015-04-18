@@ -3,14 +3,14 @@
 
     <string name="header_start"><![CDATA[<html><head>]]></string>
     <string name="header_end"><![CDATA[</head><body><div id="bodyContainer">]]></string>
-    <string name="upload_form_start"><![CDATA[<h1>FileServer
+    <string name="upload_form_start"><![CDATA[<h1>Upload to This Directory
             <form method="post" action="]]></string>
 
     <string name="upload_form_end"><![CDATA[" enctype="multipart/form-data">
             <input type="file" name="upfile" />
             <input type="submit" value="Send" />
             </form>
-            <button onclick="changeLayout()">Change Layout</button>
+            <button id="layoutButton" onclick="changeLayout()">Change Layout</button>
             </h1>]]></string>
     <string name="container_start"><![CDATA[<table id="contentContainer"><tbody><tr>]]></string>
     <string name="navigation_start"><![CDATA[<td id="navigationContainer">]]></string>

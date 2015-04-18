@@ -26,8 +26,13 @@ h1 {
     vertical-align: top;
 }
 #directoryContainer {
+    border-radius:12px;
+    background-color: #EED99E;
     width:85%;
     padding: 4px;
+}
+#layoutButton {
+    float: right;
 }
 
 /* list sort styling */

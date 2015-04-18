@@ -1,0 +1,3 @@
+Images used in this Application are taken from the Public Domain images found in the
+Open Icon Library's (http://sourceforge.net/projects/openiconlibrary/files/0.11/)
+downloadable archive of Public Domain icons called "open_icon_library-PD-0.11.tar.bz2".

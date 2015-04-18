@@ -76,26 +76,26 @@ public class SingleConnection implements Runnable {
             String method = hr.getRequestLine().getMethod();
             String uri = hr.getRequestLine().getUri();
 
-            System.out.println("method_" + method);
-            System.out.println("uri_" + uri);
+//            System.out.println("method_" + method);
+//            System.out.println("uri_" + uri);
 
             BasicHttpEntityEnclosingRequest container = new BasicHttpEntityEnclosingRequest(hr.getRequestLine());
             conn.receiveRequestEntity(container);
 
-            System.out.println("\nHeaders:");
+//            System.out.println("\nHeaders:");
 
 
             String boundary = null;
             int length = 0;
             for (Header header : hr.getAllHeaders()) {
-                System.out.println(header.getName() + ":" + header.getValue());
+//                System.out.println(header.getName() + ":" + header.getValue());
                 if(header.getName().toLowerCase().contains("content-type") && header.getValue().toLowerCase().contains("boundary="))
                     boundary = header.getValue().substring(header.getValue().indexOf("boundary=") + "boundary=".length());
                 else if(header.getName().toLowerCase().contains("content-length"))
                     length = Integer.decode(header.getValue());
             }
 
-            System.out.println("\nHeaders Done");
+//            System.out.println("\nHeaders Done");
 
             HttpEntity he = container.getEntity();
 
@@ -103,7 +103,7 @@ public class SingleConnection implements Runnable {
             BufferedInputStream is = new BufferedInputStream(he.getContent(), READ_BUFFER_SIZE);
 
 
-            System.out.println("\n responding");
+//            System.out.println("\n responding");
             final int WRITE_BUFFER_SIZE = 1024*1024; // 1 MB
             BufferedOutputStream os = new BufferedOutputStream(sock.getOutputStream(), WRITE_BUFFER_SIZE);
             PostInfo pi = new PostInfo(hr.getRequestLine().getMethod().equalsIgnoreCase("post"), boundary, length);
@@ -114,7 +114,7 @@ public class SingleConnection implements Runnable {
 
 
         } catch (IOException e) {
-            System.out.println("Singleserver failed to bind");
+//            System.out.println("Singleserver failed to bind");
             e.printStackTrace();
         } catch (HttpException e) {
             e.printStackTrace();
@@ -156,12 +156,12 @@ public class SingleConnection implements Runnable {
         String uriStr = hr.getRequestLine().getUri();
 
         Uri uriObj = Uri.parse(uriStr);
-        System.out.println("uri: " + uriObj.getPath());
+//        System.out.println("uri: " + uriObj.getPath());
         String uri = uriObj.getPath();
 
         // check external storage, and set some useful strings
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            System.out.println("Can't open external storage");
+//            System.out.println("Can't open external storage");
             return;
         }
         File exStorage = Environment.getExternalStorageDirectory();
@@ -175,7 +175,7 @@ public class SingleConnection implements Runnable {
         else
             dir.append(defaultDirectory);
 
-        System.out.println("dir preproc = " + dir);
+//        System.out.println("dir preproc = " + dir);
 
 
 
@@ -191,7 +191,7 @@ public class SingleConnection implements Runnable {
             dir.replace(0,dir.length(), defaultDirectory); // replace it with defaultDirectory if invalid
             dirFile = new File(dir.toString());
         }
-        System.out.println("directory = " + dirFile.getAbsolutePath());
+//        System.out.println("directory = " + dirFile.getAbsolutePath());
 
         // when not auth and dir != default, serve login page instead
         if(!auth && !dirFile.getAbsolutePath().contentEquals(defaultDirectory) && !uri.equalsIgnoreCase("/login.html") && mainActivity.isPasswordRequired())
@@ -209,7 +209,7 @@ public class SingleConnection implements Runnable {
             try {
                 is.close();
             } catch (IOException ex) {
-                System.out.println("error writing or creating file");
+//                System.out.println("error writing or creating file");
                 ex.printStackTrace();
             }
         } else if (uri.equalsIgnoreCase("/delete.html")) // if going to delete
@@ -356,15 +356,15 @@ public class SingleConnection implements Runnable {
             try {
                 count += is.read(byteArr);
             } catch (IOException e) {
-                System.out.println("could not read from http header");
+//                System.out.println("could not read from http header");
                 e.printStackTrace();
                 return null;
             }
         }
 
         String argStr = new String(byteArr, Charset.forName("UTF-8"));
-        System.out.println("argstr:\n" + argStr);
-        System.out.println("boundary:\n" + pi.boundary);
+//        System.out.println("argstr:\n" + argStr);
+//        System.out.println("boundary:\n" + pi.boundary);
 
         return parseFormData(argStr, pi.boundary);
 
@@ -373,14 +373,14 @@ public class SingleConnection implements Runnable {
     private void fileRename(File d, BufferedInputStream is, PostInfo pi) {
         HashMap<String, String> hm = getArgs(is, pi);
         if (hm == null) {
-            System.out.println("rename failed");
+//            System.out.println("rename failed");
             return;
         }
 
-        System.out.println("hashmap:");
-        for (Map.Entry<String, String> ent : hm.entrySet()) {
-            System.out.println(ent.getKey() + " : " + ent.getValue());
-        }
+//        System.out.println("hashmap:");
+//        for (Map.Entry<String, String> ent : hm.entrySet()) {
+//            System.out.println(ent.getKey() + " : " + ent.getValue());
+//        }
 
         String oldName = hm.get("oldName");
         String newName = hm.get("newName");
@@ -393,16 +393,16 @@ public class SingleConnection implements Runnable {
             if (oldName != null && newName != null && !newName.equalsIgnoreCase("")) {
                 File from = new File(d, oldName);
                 File to = new File(d, newName);
-                System.out.println("oldFile exists?:" + from.exists());
-                System.out.println("newFile exists?:" + to.exists());
+//                System.out.println("oldFile exists?:" + from.exists());
+//                System.out.println("newFile exists?:" + to.exists());
 
                 boolean success = from.renameTo(to);
                 if (success) {
-                    System.out.println("File " + oldName + " renamed to " + newName);
+//                    System.out.println("File " + oldName + " renamed to " + newName);
                     mainActivity.makeToast("File " + oldName + " renamed to " + newName, true);
                 } else {
-                    System.out.println("rename failed");
-                    System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
+//                    System.out.println("rename failed");
+//                    System.out.print("oldFile:" + from.getAbsolutePath() + "newFile:" + to.getAbsolutePath() + "");
 
                 }
             }
@@ -415,7 +415,7 @@ public class SingleConnection implements Runnable {
         if(cb.isChecked()) {
             File desiredFile = new File(d, fileName);
             if(desiredFile.delete()) {
-                System.out.println("File " + fileName + " deleted");
+//                System.out.println("File " + fileName + " deleted");
                 mainActivity.makeToast("File deleted: " + fileName, true);
                 return;
             }
@@ -456,8 +456,8 @@ public class SingleConnection implements Runnable {
 
 
             result.put(name, line);
-            System.out.println("added:" + name + "=" + line);
-            System.out.println("line ended with " + (int)line.charAt(line.length()-1));
+//            System.out.println("added:" + name + "=" + line);
+//            System.out.println("line ended with " + (int)line.charAt(line.length()-1));
             argStr = argStr.substring(lineEnd);
         }
 
@@ -476,7 +476,7 @@ public class SingleConnection implements Runnable {
         BufferedInputStream fis;
         try {
             fis = new BufferedInputStream(mainActivity.getAssets().open(fileName));
-            System.out.println("file exists");
+//            System.out.println("file exists");
         } catch (IOException e) {
             e.printStackTrace();
             return; // can't open file
@@ -502,7 +502,7 @@ public class SingleConnection implements Runnable {
 
         File desiredFile = new File(dir, fileName);
 
-        System.out.println("file created: " + desiredFile.getAbsolutePath());
+//        System.out.println("file created: " + desiredFile.getAbsolutePath());
 
 
         CheckBox cb = (CheckBox) mainActivity.findViewById(R.id.checkbox_download);
@@ -515,7 +515,7 @@ public class SingleConnection implements Runnable {
         {
             sendFileDownloadHeader(conn, request, desiredFile);
             BufferedInputStream fis;
-            System.out.println("file exists");
+//            System.out.println("file exists");
             try {
                 fis = new BufferedInputStream(new FileInputStream(desiredFile), 100000);
             } catch(IOException ex){
@@ -551,13 +551,13 @@ public class SingleConnection implements Runnable {
         try {
 
 
-            System.out.println(d.getPath());
-            System.out.println(d.exists());
+//            System.out.println(d.getPath());
+//            System.out.println(d.exists());
 //                first, if not in top directory, put a link for it.
 
             if(!d.getPath().equals(baseDirectory)) // if not top directory, look in above directory.
             {
-                os.write("<div class=\"dir list\"><img src=\"/wf_images/upfolder.gif\" /><a href=\"".getBytes());
+                os.write("<div class=\"dir list\"><img src=\"/wf_images/upfolder.png\" /><a href=\"".getBytes());
                 os.write(getDirectoryUrl(d.getParentFile()).getBytes());
                 os.write("\" />".getBytes());
                 os.write("<span>Parent Folder</span>".getBytes());
@@ -575,7 +575,7 @@ public class SingleConnection implements Runnable {
                     os.write("<div class=\"dir list\"><a href=\"".getBytes());
 
                     os.write(getDirectoryUrl(f).getBytes());
-                    os.write("\"><img src=\"/wf_images/openfolder.gif\"  title=\"Open Folder\" /><span>".getBytes());
+                    os.write("\"><img src=\"/wf_images/openFolder.png\"  title=\"Open Folder\" /><span>".getBytes());
                     os.write(f.getName().getBytes());
                     os.write("</span></a></div>".getBytes());
 
@@ -592,7 +592,7 @@ public class SingleConnection implements Runnable {
 
 
                     // rename button
-                    os.write("<img src=\"/wf_images/rename.gif\" alt=\"Rename file\" title=\"Rename file\" name=\"".getBytes());
+                    os.write("<img src=\"/wf_images/rename.png\" alt=\"Rename file\" title=\"Rename file\" name=\"".getBytes());
                     os.write(fname.getBytes());
                     os.write(("\" onclick=\"rename(this, \'" + d.getPath() + "\')\" />").getBytes());
                         // results in onclick="rename(this, '<path>')" where <path> is the directory
@@ -601,12 +601,12 @@ public class SingleConnection implements Runnable {
                     // delete button
                     os.write("<form method=\"post\" action=\"".getBytes());
                     os.write(getDeleteUrl(f).getBytes());
-                    os.write("\"><input type=\"image\" src=\"/wf_images/delete.gif\" alt=\"Delete file\" title=\"Delete file\" /></form></a>".getBytes());
+                    os.write("\"><input type=\"image\" src=\"/wf_images/delete.png\" alt=\"Delete file\" title=\"Delete file\" /></form></a>".getBytes());
 
                     //download button and link
                     os.write("<a target=\"_blank\" href=\"".getBytes());
                     os.write(getFileUrl(f).getBytes());
-                    os.write("\"><img src=\"/wf_images/download.gif\" title=\"Download file (opens new tab)\" /><span>".getBytes());
+                    os.write("\"><img src=\"/wf_images/download.png\" title=\"Download file (opens new tab)\" /><span>".getBytes());
                     os.write(fname.getBytes());
                     os.write("</span></a>".getBytes());
 
@@ -618,7 +618,7 @@ public class SingleConnection implements Runnable {
                 }
             }
         } catch (IOException ex) {
-            System.out.println("couldn't write html file back to requester");
+//            System.out.println("couldn't write html file back to requester");
             ex.printStackTrace();
         }
     }
@@ -695,7 +695,7 @@ public class SingleConnection implements Runnable {
         {
             curr = curr.getParentFile();
             list.add(new File(curr.getPath()));
-            System.out.println(curr.getPath());
+//            System.out.println(curr.getPath());
         }
 
         for(int i = list.size()-1 ; i >= 0; i--) // start at highest parent string, then go down.
@@ -737,7 +737,7 @@ public class SingleConnection implements Runnable {
         byte[] xArr = new byte[LIMIT];
         char[] lineArr = new char[LIMIT];
         int pos = 0;
-        System.out.println(pi.length);
+//        System.out.println(pi.length);
         int bytesProcessed = 0;
         int bytesAdded;
         int prevInArray = 0;
@@ -746,7 +746,7 @@ public class SingleConnection implements Runnable {
             if(!fileCopying)
             {
                 x = is.read();
-                System.out.print((char)x);
+//                System.out.print((char)x);
                 bytesProcessed++;
 
                 lineArr[pos++] = (char) x;
@@ -765,7 +765,7 @@ public class SingleConnection implements Runnable {
                         // filename is name from 0 to
                         fileName = subStr.substring(0, subStr.indexOf('"'));
 
-                        System.out.println("filename get:" + fileName);
+//                        System.out.println("filename get:" + fileName);
                         fs = new BufferedOutputStream(new FileOutputStream(new File(dir, fileName)));
 
                         if(pi.length > 1024*1024)   // if file bigger than 1MB, display that it started uploading.
@@ -775,7 +775,7 @@ public class SingleConnection implements Runnable {
                     if (++newLines == 4)
                     {
                         fileCopying = true;
-                        System.out.println("Starting file copy");
+//                        System.out.println("Starting file copy");
                         newLines++;
                     }
                     pos = 0;
@@ -792,7 +792,7 @@ public class SingleConnection implements Runnable {
                     validInArray = prevInArray + bytesAdded;
                     bytesProcessed += bytesAdded;
                 } catch(ArrayIndexOutOfBoundsException ai){
-                    System.out.println("l:" + xArr.length + " w:" + prevInArray);
+//                    System.out.println("l:" + xArr.length + " w:" + prevInArray);
                     throw ai;
                 }
                 // make new string only out of the array part written
@@ -812,8 +812,8 @@ public class SingleConnection implements Runnable {
                         --endIndex;
 
                     fs.write(xArr, 0, endIndex);
-                    System.out.println("exit boundary found: length");
-                    System.out.println(pi.boundary.length());
+//                    System.out.println("exit boundary found: length");
+//                    System.out.println(pi.boundary.length());
                     break;
                 }
                 else // if not, write everything up to the last newline, and shift string stuff over
@@ -867,7 +867,7 @@ public class SingleConnection implements Runnable {
         try {
             conn.sendResponseHeader(new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_ACCEPTED, null));
         } catch (IOException ex) {
-            System.out.println("http headers couldn't send");
+//            System.out.println("http headers couldn't send");
         } catch (HttpException e) {
             e.printStackTrace();
         }
@@ -883,7 +883,7 @@ public class SingleConnection implements Runnable {
         try {
             conn.sendResponseHeader(new BasicHttpResponse(hr.getProtocolVersion(), HttpStatus.SC_CONTINUE, null));
         } catch (IOException ex) {
-            System.out.println("http headers couldn't send");
+//            System.out.println("http headers couldn't send");
         } catch (HttpException e) {
             e.printStackTrace();
         }

@@ -42,13 +42,6 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-
-
-    }
-
     /**
      * Makes directory for this app
      * @return True if successful or it already exists. False if unsuccessful, external storage
@@ -56,7 +49,7 @@ public class MainActivity extends ActionBarActivity {
      */
     private boolean makeWifiTransferDir() {
         if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            System.out.println("Can't open external storage");
+//            System.out.println("Can't open external storage");
             return false;
         }
 
@@ -128,7 +121,7 @@ public class MainActivity extends ActionBarActivity {
     protected void onDestroy() {
         super.onDestroy();
         acceptor.stop();
-        System.out.println("thread stopped");
+//        System.out.println("thread stopped");
     }
 
     String getPassword(){
@@ -159,11 +152,11 @@ public class MainActivity extends ActionBarActivity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        System.out.println(item.toString() + ":" + id);
-        System.out.println(R.id.action_settings);
+//        System.out.println(item.toString() + ":" + id);
+//        System.out.println(R.id.action_settings);
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            checkPassword();
+//            checkPassword();
             Intent i = new Intent(getApplicationContext(), SettingsActivity.class);
             startActivity(i);
             return true;

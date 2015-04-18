@@ -38,8 +38,8 @@ public class ConnectionAcceptor implements Runnable {
     synchronized boolean authUser(SingleConnection conn, String password)
     {
 //        if(password == mainActivity.)
-        System.out.println("pass: " + password + " attempted");
-        System.out.println("pass=" + mainActivity.getPassword());
+//        System.out.println("pass: " + password + " attempted");
+//        System.out.println("pass=" + mainActivity.getPassword());
         if(password.equals(mainActivity.getPassword())) {
             if(!hsP.contains(conn.sock.getInetAddress()))
                 hsP.add(conn.sock.getInetAddress());
@@ -86,7 +86,7 @@ public class ConnectionAcceptor implements Runnable {
         WifiInfo wi = wm.getConnectionInfo();
         int ip = wi.getIpAddress();
         final String ipstr;
-        System.out.println(ip);
+//        System.out.println(ip);
         if(ip != 0x00000000)
             ipstr = (ip & 0xff) + "." + ((ip >> 8) & 0xff) + "." + ((ip >> 16) & 0xff)
                 + "." + ((ip >> 24) & 0xff) + ":" + ssock.getLocalPort();
@@ -103,7 +103,7 @@ public class ConnectionAcceptor implements Runnable {
             }
         });
 
-        System.out.println("Set ip: " + ipstr);
+//        System.out.println("Set ip: " + ipstr);
 
 
         hs = new HashSet<>();
@@ -115,8 +115,8 @@ public class ConnectionAcceptor implements Runnable {
         {
             try {
                 Socket s = ssock.accept();
-                System.out.println("sendbuffersize:" + s.getSendBufferSize());
-                System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
+//                System.out.println("sendbuffersize:" + s.getSendBufferSize());
+//                System.out.println("recvbuffersize:" + s.getReceiveBufferSize());
                 SingleConnection serv = new SingleConnection(mainActivity, this, s, getAuth(s.getInetAddress()));
                 addConn(serv);
                 new Thread(serv).start();
@@ -138,7 +138,7 @@ public class ConnectionAcceptor implements Runnable {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("could not close server socket used in acceptor");
+//            System.out.println("could not close server socket used in acceptor");
         } catch (Exception e) {
             e.printStackTrace();
         }
