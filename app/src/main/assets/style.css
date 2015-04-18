@@ -33,6 +33,8 @@ h1 {
 }
 #layoutButton {
     float: right;
+    position: relative;
+    bottom: 30px;
 }
 
 /* list sort styling */

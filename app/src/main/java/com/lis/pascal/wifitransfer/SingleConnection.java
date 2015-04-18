@@ -557,7 +557,7 @@ public class SingleConnection implements Runnable {
 
             if(!d.getPath().equals(baseDirectory)) // if not top directory, look in above directory.
             {
-                os.write("<div class=\"dir list\"><img src=\"/wf_images/upfolder.png\" /><a href=\"".getBytes());
+                os.write("<div class=\"dir list\"><img src=\"/wf_images/upFolder.png\" /><a href=\"".getBytes());
                 os.write(getDirectoryUrl(d.getParentFile()).getBytes());
                 os.write("\" />".getBytes());
                 os.write("<span>Parent Folder</span>".getBytes());

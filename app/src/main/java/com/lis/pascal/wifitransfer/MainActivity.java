@@ -129,7 +129,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     boolean isPasswordRequired(){
-        return PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean("password_active_checkbox", true);
+        return PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean("password_active_checkbox", false);
     }
 
     void checkPassword(){
