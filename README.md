@@ -1,6 +1,8 @@
 # WifiTransfer
 Android App for File Transfer through HTTP on LAN.
 
+Available in the [Google Play Store](https://play.google.com/store/apps/details?id=com.lis.pascal.wifitransfer).
+
 ## Build Information
 WifiTransfer is made in Android Studio 1.0.1. 
 
